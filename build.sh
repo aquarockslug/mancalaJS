@@ -1,6 +1,6 @@
-#!/bin/zsh
+#!/bin/bash
 
-GAME_TITLE="LittleJs"
+GAME_TITLE="mancalaJS"
 ARCHIVE_NAME="game"
 
 # create a zip file containing only the files required to play
