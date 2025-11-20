@@ -167,8 +167,6 @@ function gameRender() {
 		worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))),
 		32,
 		BLACK,
-		2,
-		BLACK,
 	);
 
 	// draw each pocket and its marbles
