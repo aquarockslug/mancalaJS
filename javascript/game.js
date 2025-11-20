@@ -13,7 +13,7 @@ Pocket = (index, count, home) => ({ index, count, home });
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
-	cameraScale = 30;
+	cameraScale -= 2;
 
 	initBoard();
 }
