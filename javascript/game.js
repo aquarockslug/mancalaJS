@@ -7,19 +7,13 @@ const HEIGHT = 2;
 const INITMARBLECOUNT = 3;
 const MARBLECOLOR = BLACK;
 
-// Game state variables
-let boardMoves = []; // Array to track all moves made in the game
-let Pocket = (i, m) => ({ index: i, count: m });
+boardMoves = []; // Array to track all moves made in the game
+Pocket = (index, count, home) => ({ index, count, home });
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 
-	// Initialize the board with the starting configuration
-	playMove((i, _) => Pocket(i, INITMARBLECOUNT));
-
-	playMove((i, m) =>
-		Pocket(i, m?.index === 0 || m?.index === 7 ? -1 : INITMARBLECOUNT),
-	);
+	initBoard();
 
 	console.log(getBoardState());
 	console.log(getPocketPos());
@@ -37,36 +31,48 @@ function gameUpdatePost() {}
 
 // ==================== BOARD LOGIC ====================
 
-// Iterates through all pockets and applies the move function
+// iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
 	for (let pocketIndex = 0; pocketIndex < HEIGHT * WIDTH - 2; pocketIndex++)
 		yield move(pocketIndex, state[pocketIndex]);
 }
 
-// Returns an array representing the current marble count in each pocket
+// returns an array representing the current marble count in each pocket
 function getBoardState() {
 	// Apply each move in boardMoves to build up the current board state
 	calcBoard = (acc, curr) => Array.from(moveMarbles(acc, curr));
 	return boardMoves.reduce(calcBoard, []);
 }
 
-// Execute a move and add it to the move history
+// execute a move and add it to the move history
 function playMove(move) {
 	currState = getBoardState();
 	boardMoves.push(move);
 	return Array.from(moveMarbles(currState, move));
 }
 
-// Make a move which starts at the given pocket index
-function getMove(startingPocket) {
-	firstMove = (i, m) => (i > 10 ? Pocket(i, m.count + 3) : Pocket(i, 0));
+// plays moves that set up the board
+function initBoard() {
+	playMove((i, _) => Pocket(i, INITMARBLECOUNT, false));
+	playMove((i, m) => {
+		if (m?.index === 0 || m?.index === 7) return Pocket(i, 0, true);
+		else return Pocket(i, INITMARBLECOUNT, false);
+	});
+}
 
-	return playMove(getBoardState(), firstMove);
+// creates a move function which starts at the given pocket index
+function getMove(startingPocketIndex) {
+	state = getBoardState()
+	pocket = state[startingPocketIndex]
+
+	testMove = (i, m) => (i > startingPocketIndex && !m.home ? Pocket(i, m.count + 3, m.home) : Pocket(i, 0, m.home));
+
+	return playMove(testMove);
 }
 
 // ==================== RENDERING ====================
 
-// Returns an array of objects with pocket index and screen position
+// returns an array of objects with pocket index and screen position
 function getPocketPos() {
 	positions = [];
 	let i = 0;
