@@ -1,5 +1,5 @@
-const POCKETPOS = vec2(-10, -2.5);
-const POCKETSIZE = vec2(2.5);
+const POCKETPOS = vec2(-10.4, -2.5);
+const POCKETSIZE = vec2(2.6);
 
 const WIDTH = 8;
 const HEIGHT = 2;
@@ -13,11 +13,9 @@ Pocket = (index, count, home) => ({ index, count, home });
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
+	cameraScale = 30;
 
 	initBoard();
-
-	console.log(getBoardState());
-	console.log(getPocketPos());
 }
 
 function gameStart() {
