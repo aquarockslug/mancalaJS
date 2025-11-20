@@ -15,7 +15,11 @@ function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 
 	// Initialize the board with the starting configuration
-	playMove([], (i, _) => Pocket(i, INITMARBLECOUNT));
+	playMove((i, _) => Pocket(i, INITMARBLECOUNT));
+
+	playMove((i, m) =>
+		Pocket(i, m?.index === 0 || m?.index === 7 ? -1 : INITMARBLECOUNT),
+	);
 
 	console.log(getBoardState());
 	console.log(getPocketPos());
@@ -47,13 +51,14 @@ function getBoardState() {
 }
 
 // Execute a move and add it to the move history
-function playMove(state, move) {
+function playMove(move) {
+	currState = getBoardState();
 	boardMoves.push(move);
-	return Array.from(moveMarbles(state, move));
+	return Array.from(moveMarbles(currState, move));
 }
 
 // Make a move which starts at the given pocket index
-function move(startingPocket) {
+function getMove(startingPocket) {
 	firstMove = (i, m) => (i > 10 ? Pocket(i, m.count + 3) : Pocket(i, 0));
 
 	return playMove(getBoardState(), firstMove);
@@ -65,60 +70,57 @@ function move(startingPocket) {
 function getPocketPos() {
 	positions = [];
 	let i = 0;
-
-	// Iterate through grid positions to calculate pocket locations
-	for (let y = 0.5; y <= HEIGHT; y += 1.3) {
-		if (i < 8)
-			for (let x = 0.5; x <= WIDTH; x++) {
-				i++;
-				positions.push({
-					index: i - 1,
-					value: vec2(x, y).multiply(POCKETSCALE).add(POCKETPOS),
-				});
-			}
-		else
-			for (let x = WIDTH - 0.5; x >= 0; x--) {
-				i++;
-				pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
-				positions.push({
-					index: pocketIndex,
-					value: vec2(x, y).multiply(POCKETSCALE).add(POCKETPOS),
-				});
-			}
+	for (let x = 0.5; x <= WIDTH; x++) {
+		i++;
+		positions.push({
+			index: i - 1,
+			value: vec2(x, 0.5).multiply(POCKETSCALE).add(POCKETPOS),
+		});
+	}
+	for (let x = WIDTH - 0.5; x >= 0; x--) {
+		i++;
+		pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
+		positions.push({
+			index: pocketIndex,
+			value: vec2(x, 1.75).multiply(POCKETSCALE).add(POCKETPOS),
+		});
 	}
 	return positions;
 }
 
-function gameRender() {
-	// Draw background layers
-	drawRect(vec2(0), vec2(32), rgb(0.6, 0.4, 0.08), 0); // Game board gray background
+function drawHomePocket(pos) {
+	drawRect(pos.add(vec2(0, 1.625)), vec2(2.5, 3.25), rgb(0.5, 0.3, 0));
+	drawCircle(pos, 2.5, rgb(0.5, 0.3, 0));
+	drawCircle(pos.add(vec2(0, 3.25)), 2.5, rgb(0.5, 0.3, 0));
+}
 
-	// Get current game state and pocket positions
+function gameRender() {
+	// draw background layers
+	drawRect(vec2(0), vec2(32), rgb(0.6, 0.4, 0.08), 0);
+
+	// get current game state and pocket positions
 	state = getBoardState();
 	positions = getPocketPos();
 
-	// Render each pocket and its marbles
+	// draw each pocket and its marbles
 	for (pos of positions) {
 		if (pos.index < 0) continue;
 
-		// Get marble count for this pocket
+		// get the pocket which is currently being drawn
 		pocket = state[pos.index];
 
-		// Draw pocket background circle
-		if (pocket.index === 0 || pocket.index === 7)
-			drawCircle(pos.value, 5, rgb(0.5, 0.3, 0));
+		// draw pocket
+		if (pocket.index === 0 || pocket.index === 7) drawHomePocket(pos.value);
 		else drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
 
-		drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
-
-		drawCircle(mousePos, 0.2, MARBLECOLOR);
-
-		// Draw marbles in the pocket
+		// draw marbles in the pocket
 		// TODO: render each marble in a honeycomb shape for better visual
 		// TODO: split a circle's circumference into 5 parts for marble placement
 		for (let i = 0; i < pocket.count; i++)
 			drawCircle(pos.value, 0.2, MARBLECOLOR);
 	}
+
+	// draw the held piece
 	if (mouseIsDown(0)) drawCircle(mousePos, 0.2, MARBLECOLOR);
 }
 
