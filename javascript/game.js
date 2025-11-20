@@ -18,20 +18,18 @@ function gameInit() {
 	initBoard();
 }
 
-function gameStart() {
-	gamestate = "playing"; // Set game state to active gameplay
+function isMouseOverValidPocket(pos) {
+	return pos.index >= 0 &&
+		mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
+		pos.index !== 0 &&
+		pos.index !== 7 &&
+		pos.index !== 16;
 }
 
 function gameUpdate() {
 	if (!mouseWasPressed(0)) return;
 	for (pos of positions) {
-		if (pos.index < 0) continue;
-		if (
-			mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
-			pos.index !== 0 &&
-			pos.index !== 7 &&
-			pos.index !== 16
-		)
+		if (isMouseOverValidPocket(pos))
 			playMove(pos.index);
 	}
 }
@@ -60,9 +58,11 @@ function playMove(startingPocketIndex) {
 		start = state[startingPocketIndex];
 		crossing = start.index % 15 > (start.index + start.count) % 14;
 
-		if (i >= start.index && i <= start.index + start.count) {
-			return Pocket(i, i === start.index ? 0 : m.count + 1, m.home);
-		} else if (crossing && i <= (start.index + start.count) % 14) {
+		// find the indicies that need to updated
+		if (
+			(i >= start.index && i <= start.index + start.count) ||
+			(crossing && i <= (start.index + start.count) % 14)
+		) {
 			return Pocket(i, i === start.index ? 0 : m.count + 1, m.home);
 		} else {
 			return Pocket(i, m.count, m.home);
@@ -142,12 +142,7 @@ function gameRender() {
 		pocket = state[pos.index];
 
 		//highlight the pocket the mouse is over
-		if (
-			mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
-			pocket.index !== 0 &&
-			pocket.index !== 7 &&
-			pocket.index !== 16
-		)
+		if (isMouseOverValidPocket(pos))
 			drawCircle(pos.value, 2.6, WHITE);
 
 		// draw pocket
