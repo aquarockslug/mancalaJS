@@ -66,10 +66,9 @@ function getBoardState() {
 	return boardMoves.reduce(calcBoard, []);
 }
 
-// execute a move and add it to the move history
+// add a move to the list
 function playMove(startingPocketIndex) {
-	currState = getBoardState();
-	move = (i, m, state) => {
+	boardMoves.push((i, m, state) => {
 		let start = state[startingPocketIndex];
 		let crossing = start.index % 15 > (start.index + start.count) % 14;
 
@@ -82,9 +81,7 @@ function playMove(startingPocketIndex) {
 		} else {
 			return Pocket(i, m.count, m.home);
 		}
-	};
-	boardMoves.push(move);
-	return Array.from(moveMarbles(currState, move));
+	});
 }
 
 // create moves that set up the board
@@ -143,8 +140,8 @@ function drawHomePocket(pos, count) {
 
 function drawMarbles(pos, count) {
 	getOffset = (i) =>
-		i < 7
-			? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25)
+			i < 7 ? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0
+			      : MARBLESIZE * 1.25)
 			: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
 
 	for (let i = 0; i < count; i++)
