@@ -95,9 +95,12 @@ function getPocketPos() {
 }
 
 function drawHomePocket(pos) {
-	drawRect(pos.add(vec2(0, 1.625)), vec2(2.5, 3.25), rgb(0.5, 0.3, 0));
+	center = pos.add(vec2(0, 1.625))
+	drawRect(center, vec2(2.5, 3.25), rgb(0.5, 0.3, 0));
 	drawCircle(pos, 2.5, rgb(0.5, 0.3, 0));
 	drawCircle(pos.add(vec2(0, 3.25)), 2.5, rgb(0.5, 0.3, 0));
+
+	drawTextScreen("0", worldToScreen(center), 32, WHITE, 2, BLACK);
 }
 
 function gameRender() {
