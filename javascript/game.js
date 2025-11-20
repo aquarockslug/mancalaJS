@@ -1,24 +1,24 @@
-const POCKETPOS = vec2(-6, -2);
-const POCKETSCALE = vec2(2);
+const POCKETPOS = vec2(-10, -2.5);
+const POCKETSCALE = vec2(2.5);
 
-const BOARDSIZE = vec2(16);
-
-const MARBLECOLOR = BLACK;
-
-const WIDTH = 6;
+const WIDTH = 8;
 const HEIGHT = 2;
 
 const INITMARBLECOUNT = 3;
+const MARBLECOLOR = BLACK;
 
 // Game state variables
 let boardMoves = []; // Array to track all moves made in the game
-let pocket = (i, m) => ({ index: i, count: m });
+let Pocket = (i, m) => ({ index: i, count: m });
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 
 	// Initialize the board with the starting configuration
-	playMove([], (i, m) => pocket(i, INITMARBLECOUNT));
+	playMove([], (i, _) => Pocket(i, INITMARBLECOUNT));
+
+	console.log(getBoardState());
+	console.log(getPocketPos());
 }
 
 function gameStart() {
@@ -35,14 +35,14 @@ function gameUpdatePost() {}
 
 // Iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
-	for (let pocketIndex = 0; pocketIndex <= HEIGHT * WIDTH; pocketIndex++)
+	for (let pocketIndex = 0; pocketIndex < HEIGHT * WIDTH - 2; pocketIndex++)
 		yield move(pocketIndex, state[pocketIndex]);
 }
 
 // Returns an array representing the current marble count in each pocket
 function getBoardState() {
 	// Apply each move in boardMoves to build up the current board state
-	let calcBoard = (acc, curr) => Array.from(moveMarbles(acc, curr));
+	calcBoard = (acc, curr) => Array.from(moveMarbles(acc, curr));
 	return boardMoves.reduce(calcBoard, []);
 }
 
@@ -54,7 +54,7 @@ function playMove(state, move) {
 
 // Make a move which starts at the given pocket index
 function move(startingPocket) {
-	let firstMove = (i, m) => (i > 10 ? pocket(i, m.count + 3) : pocket(i, 0));
+	firstMove = (i, m) => (i > 10 ? Pocket(i, m.count + 3) : Pocket(i, 0));
 
 	return playMove(getBoardState(), firstMove);
 }
@@ -63,42 +63,61 @@ function move(startingPocket) {
 
 // Returns an array of objects with pocket index and screen position
 function getPocketPos() {
-	let positions = [];
+	positions = [];
 	let i = 0;
 
 	// Iterate through grid positions to calculate pocket locations
 	for (let y = 0.5; y <= HEIGHT; y += 1.3) {
-		for (let x = 0.5; x <= WIDTH; x++) {
-			i++;
-			positions.push({
-				index: i,
-				pos: vec2(x, y).multiply(POCKETSCALE).add(POCKETPOS),
-			});
-		}
+		if (i < 8)
+			for (let x = 0.5; x <= WIDTH; x++) {
+				i++;
+				positions.push({
+					index: i - 1,
+					value: vec2(x, y).multiply(POCKETSCALE).add(POCKETPOS),
+				});
+			}
+		else
+			for (let x = WIDTH - 0.5; x >= 0; x--) {
+				i++;
+				pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
+				positions.push({
+					index: pocketIndex,
+					value: vec2(x, y).multiply(POCKETSCALE).add(POCKETPOS),
+				});
+			}
 	}
 	return positions;
 }
 
 function gameRender() {
 	// Draw background layers
-	drawRect(vec2(0), BOARDSIZE, rgb(0.6, 0.4, 0.08), (angle = 0)); // Game board gray background
+	drawRect(vec2(0), vec2(32), rgb(0.6, 0.4, 0.08), 0); // Game board gray background
 
 	// Get current game state and pocket positions
-	let state = getBoardState();
-	let positions = getPocketPos();
+	state = getBoardState();
+	positions = getPocketPos();
 
 	// Render each pocket and its marbles
-	for (let p of positions) {
-		// Draw pocket background circle
-		drawCircle(p.pos, 1.75, rgb(0.5, 0.3, 0));
+	for (pos of positions) {
+		if (pos.index < 0) continue;
 
 		// Get marble count for this pocket
-		let pocket = state[p.index];
+		pocket = state[pos.index];
+
+		// Draw pocket background circle
+		if (pocket.index === 0 || pocket.index === 7)
+			drawCircle(pos.value, 5, rgb(0.5, 0.3, 0));
+		else drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
+
+		drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
+
+		drawCircle(mousePos, 0.2, MARBLECOLOR);
 
 		// Draw marbles in the pocket
 		// TODO: render each marble in a honeycomb shape for better visual
 		// TODO: split a circle's circumference into 5 parts for marble placement
-		for (let i = 0; i < pocket.count; i++) drawCircle(p.pos, 0.2, MARBLECOLOR);
+		for (let i = 0; i < pocket.count; i++)
+			drawCircle(pos.value, 0.2, MARBLECOLOR);
 	}
 	if (mouseIsDown(0)) drawCircle(mousePos, 0.2, MARBLECOLOR);
 }
