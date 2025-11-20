@@ -1,11 +1,12 @@
 const POCKETPOS = vec2(-10, -2.5);
-const POCKETSCALE = vec2(2.5);
+const POCKETSIZE = vec2(2.5);
 
 const WIDTH = 8;
 const HEIGHT = 2;
 
 const INITMARBLECOUNT = 3;
-const MARBLECOLOR = BLACK;
+const MARBLECOLOR = WHITE;
+const MARBLESIZE = 0.35;
 
 boardMoves = []; // Array to track all moves made in the game
 Pocket = (index, count, home) => ({ index, count, home });
@@ -24,7 +25,17 @@ function gameStart() {
 }
 
 function gameUpdate() {
-	// if (state != "playing") return;
+	if (!mouseWasPressed(0)) return;
+	for (pos of positions) {
+		if (pos.index < 0) continue;
+		if (
+			mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
+			pos.index !== 0 &&
+			pos.index !== 7 &&
+			pos.index !== 16
+		)
+			playMove(pos.index);
+	}
 }
 
 function gameUpdatePost() {}
@@ -34,7 +45,7 @@ function gameUpdatePost() {}
 // iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
 	for (let pocketIndex = 0; pocketIndex < HEIGHT * WIDTH - 2; pocketIndex++)
-		yield move(pocketIndex, state[pocketIndex]);
+		yield move(pocketIndex, state[pocketIndex], state);
 }
 
 // returns an array representing the current marble count in each pocket
@@ -45,29 +56,33 @@ function getBoardState() {
 }
 
 // execute a move and add it to the move history
-function playMove(move) {
+function playMove(startingPocketIndex) {
 	currState = getBoardState();
+	move = (i, m, state) => {
+		start = state[startingPocketIndex];
+		crossing = start.index % 15 > (start.index + start.count) % 14;
+
+		if (i >= start.index && i <= start.index + start.count) {
+			return Pocket(i, i === start.index ? 0 : m.count + 1, m.home);
+		} else if (crossing && i <= (start.index + start.count) % 14) {
+			return Pocket(i, i === start.index ? 0 : m.count + 1, m.home);
+		} else {
+			return Pocket(i, m.count, m.home);
+		}
+	};
 	boardMoves.push(move);
 	return Array.from(moveMarbles(currState, move));
 }
 
-// plays moves that set up the board
+// use moves that set up the board
 function initBoard() {
-	playMove((i, _) => Pocket(i, INITMARBLECOUNT, false));
-	playMove((i, m) => {
-		if (m?.index === 0 || m?.index === 7) return Pocket(i, 0, true);
-		else return Pocket(i, INITMARBLECOUNT, false);
-	});
-}
-
-// creates a move function which starts at the given pocket index
-function getMove(startingPocketIndex) {
-	state = getBoardState()
-	pocket = state[startingPocketIndex]
-
-	testMove = (i, m) => (i > startingPocketIndex && !m.home ? Pocket(i, m.count + 3, m.home) : Pocket(i, 0, m.home));
-
-	return playMove(testMove);
+	boardMoves = [
+		(i, _) => Pocket(i, null, false),
+		(i, m) => {
+			if (m?.index === 0 || m?.index === 7) return Pocket(i, 0, true);
+			else return Pocket(i, INITMARBLECOUNT, false);
+		},
+	];
 }
 
 // ==================== RENDERING ====================
@@ -80,7 +95,7 @@ function getPocketPos() {
 		i++;
 		positions.push({
 			index: i - 1,
-			value: vec2(x, 0.5).multiply(POCKETSCALE).add(POCKETPOS),
+			value: vec2(x, 0.5).multiply(POCKETSIZE).add(POCKETPOS),
 		});
 	}
 	for (let x = WIDTH - 0.5; x >= 0; x--) {
@@ -88,19 +103,30 @@ function getPocketPos() {
 		pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
 		positions.push({
 			index: pocketIndex,
-			value: vec2(x, 1.75).multiply(POCKETSCALE).add(POCKETPOS),
+			value: vec2(x, 1.75).multiply(POCKETSIZE).add(POCKETPOS),
 		});
 	}
 	return positions;
 }
 
-function drawHomePocket(pos) {
-	center = pos.add(vec2(0, 1.625))
+function drawHomePocket(pos, count) {
+	center = pos.add(vec2(0, 1.625));
 	drawRect(center, vec2(2.5, 3.25), rgb(0.5, 0.3, 0));
 	drawCircle(pos, 2.5, rgb(0.5, 0.3, 0));
 	drawCircle(pos.add(vec2(0, 3.25)), 2.5, rgb(0.5, 0.3, 0));
 
-	drawTextScreen("0", worldToScreen(center), 32, WHITE, 2, BLACK);
+	drawTextScreen(String(count), worldToScreen(center), 32, WHITE, 2, BLACK);
+}
+
+// draw marbles in a circle
+function drawMarbles(pos, count) {
+	getOffset = (i) =>
+		i < 7
+			? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25)
+			: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
+
+	for (let i = 0; i < count; i++)
+		drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
 }
 
 function gameRender() {
@@ -114,23 +140,25 @@ function gameRender() {
 	// draw each pocket and its marbles
 	for (pos of positions) {
 		if (pos.index < 0) continue;
-
 		// get the pocket which is currently being drawn
 		pocket = state[pos.index];
 
+		//highlight the pocket the mouse is over
+		if (
+			mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
+			pocket.index !== 0 &&
+			pocket.index !== 7 &&
+			pocket.index !== 16
+		)
+			drawCircle(pos.value, 2.6, WHITE);
+
 		// draw pocket
-		if (pocket.index === 0 || pocket.index === 7) drawHomePocket(pos.value);
+		if (pocket.index === 0 || pocket.index === 7)
+			drawHomePocket(pos.value, pocket.count);
 		else drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
 
-		// draw marbles in the pocket
-		// TODO: render each marble in a honeycomb shape for better visual
-		// TODO: split a circle's circumference into 5 parts for marble placement
-		for (let i = 0; i < pocket.count; i++)
-			drawCircle(pos.value, 0.2, MARBLECOLOR);
+		drawMarbles(pos.value, pocket.count);
 	}
-
-	// draw the held piece
-	if (mouseIsDown(0)) drawCircle(mousePos, 0.2, MARBLECOLOR);
 }
 
 function gameRenderPost() {}
