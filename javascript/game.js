@@ -1,36 +1,42 @@
-const POCKETPOS = vec2(-10.4, -2.5);
+const POCKETPOS = vec2(-10.4, -2.25);
 const POCKETSIZE = vec2(2.6);
 
-const WIDTH = 8;
-const HEIGHT = 2;
+const BOARDWIDTH = 8;
+const BOARDHEIGHT = 2;
+
+const SANDRED = new Color(0.78, 0.28, 0.03);
+const SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63);
+const SANDORANGE = new Color(0.97, 0.6, 0.22);
 
 const INITMARBLECOUNT = 3;
-const MARBLECOLOR = WHITE;
+const MARBLECOLOR = SANDRED;
 const MARBLESIZE = 0.35;
 
 boardMoves = []; // Array to track all moves made in the game
+moving = false;
+
 Pocket = (index, count, home) => ({ index, count, home });
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
-	cameraScale -= 2;
+	cameraScale -= 1.5;
 
 	initBoard();
 }
 
 function isMouseOverValidPocket(pos) {
-	return pos.index >= 0 &&
+	return (
 		mousePos.distance(pos.value) < POCKETSIZE.x / 2 &&
 		pos.index !== 0 &&
 		pos.index !== 7 &&
-		pos.index !== 16;
+		pos.index !== 16
+	);
 }
 
 function gameUpdate() {
 	if (!mouseWasPressed(0)) return;
 	for (pos of positions) {
-		if (isMouseOverValidPocket(pos))
-			playMove(pos.index);
+		if (isMouseOverValidPocket(pos)) playMove(pos.index);
 	}
 }
 
@@ -40,7 +46,11 @@ function gameUpdatePost() {}
 
 // iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
-	for (let pocketIndex = 0; pocketIndex < HEIGHT * WIDTH - 2; pocketIndex++)
+	for (
+		let pocketIndex = 0;
+		pocketIndex < BOARDHEIGHT * BOARDWIDTH - 2;
+		pocketIndex++
+	)
 		yield move(pocketIndex, state[pocketIndex], state);
 }
 
@@ -89,19 +99,19 @@ function initBoard() {
 function getPocketPos() {
 	positions = [];
 	let i = 0;
-	for (let x = 0.5; x <= WIDTH; x++) {
+	for (let x = 0.5; x <= BOARDWIDTH; x++) {
 		i++;
 		positions.push({
 			index: i - 1,
-			value: vec2(x, 0.5).multiply(POCKETSIZE).add(POCKETPOS),
+			value: vec2(x, 0.55).multiply(POCKETSIZE).add(POCKETPOS),
 		});
 	}
-	for (let x = WIDTH - 0.5; x >= 0; x--) {
+	for (let x = BOARDWIDTH - 0.5; x >= 0; x--) {
 		i++;
 		pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
 		positions.push({
 			index: pocketIndex,
-			value: vec2(x, 1.75).multiply(POCKETSIZE).add(POCKETPOS),
+			value: vec2(x, 1.7).multiply(POCKETSIZE).add(POCKETPOS),
 		});
 	}
 	return positions;
@@ -109,11 +119,21 @@ function getPocketPos() {
 
 function drawHomePocket(pos, count) {
 	center = pos.add(vec2(0, 1.625));
-	drawRect(center, vec2(2.5, 3.25), rgb(0.5, 0.3, 0));
-	drawCircle(pos, 2.5, rgb(0.5, 0.3, 0));
-	drawCircle(pos.add(vec2(0, 3.25)), 2.5, rgb(0.5, 0.3, 0));
+	drawCircle(pos, 2.5, BLACK);
+	drawCircle(pos.add(vec2(0, 3)), 2.5, BLACK);
+	drawRect(center, vec2(2.5, 3), BLACK);
+	drawCircle(pos, 2.4, SANDORANGE);
+	drawCircle(pos.add(vec2(0, 3)), 2.4, SANDORANGE);
+	drawRect(center, vec2(2.4, 3), SANDORANGE);
 
-	drawTextScreen(String(count), worldToScreen(center), 32, WHITE, 2, BLACK);
+	drawTextScreen(
+		String(count),
+		worldToScreen(center),
+		32,
+		SANDORANGE,
+		2,
+		BLACK,
+	);
 }
 
 // draw marbles in a circle
@@ -129,7 +149,10 @@ function drawMarbles(pos, count) {
 
 function gameRender() {
 	// draw background layers
-	drawRect(vec2(0), vec2(32), rgb(0.6, 0.4, 0.08), 0);
+	drawRect(vec2(0), vec2(32), SANDLIGHTBROWN);
+	drawRect(vec2(0, 0.25), vec2(32, 7), SANDRED);
+	drawRect(vec2(0, -2.425), vec2(32, 0.05), BLACK);
+	// drawRect(vec2(-10.45, 0.25), vec2(0.05, 7), BLACK);
 
 	// get current game state and pocket positions
 	state = getBoardState();
@@ -141,14 +164,14 @@ function gameRender() {
 		// get the pocket which is currently being drawn
 		pocket = state[pos.index];
 
-		//highlight the pocket the mouse is over
-		if (isMouseOverValidPocket(pos))
-			drawCircle(pos.value, 2.6, WHITE);
-
 		// draw pocket
+		// drawCircle(pos.value, 2.5, BLACK);
 		if (pocket.index === 0 || pocket.index === 7)
 			drawHomePocket(pos.value, pocket.count);
-		else drawCircle(pos.value, 2.5, rgb(0.5, 0.3, 0));
+		else {
+			if (isMouseOverValidPocket(pos)) drawCircle(pos.value, 2.5, BLACK);
+			drawCircle(pos.value, 2.4, SANDORANGE);
+		}
 
 		drawMarbles(pos.value, pocket.count);
 	}
