@@ -37,18 +37,14 @@ function isMouseOverValidPocket(pos) {
 	);
 }
 
-function resetButton() {
-	return !(boardMoves.length - 2) ? null : mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2
+function undoButton() {
+	return !(boardMoves.length - 2) ? false : mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2
 }
 
 function gameUpdate() {
 	if (!mouseWasPressed(0)) return;
-	if (resetButton()) {
-		boardMoves.pop()
-	}
-	for (pos of positions) {
-		if (isMouseOverValidPocket(pos)) playMove(pos.index);
-	}
+	if (undoButton()) boardMoves.pop()
+	for (pos of positions) if (isMouseOverValidPocket(pos)) playMove(pos.index);
 }
 
 // ==================== BOARD LOGIC ====================
@@ -154,10 +150,9 @@ function drawBackground() {
 	drawRect(vec2(0, -2.425), vec2(32, 0.05), BLACK);
 }
 
-function gameRender() {
-	let [state, positions] = [getBoardState(), getPocketPos()]
-
-	drawBackground()
+function drawButton(){
+	if (BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2)
+		drawCircle(BUTTONPOS, BUTTONSIZE + 0.1, BLACK);
 	drawCircle(BUTTONPOS, BUTTONSIZE, SANDRED);
 	drawTextScreen(
 		"\u20D4",
@@ -165,6 +160,13 @@ function gameRender() {
 		32,
 		BLACK,
 	);
+}
+
+function gameRender() {
+	let [state, positions] = [getBoardState(), getPocketPos()]
+
+	drawBackground()
+	drawButton()
 
 	// draw each pocket and its marbles
 	for (pos of positions) {
