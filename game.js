@@ -1,4 +1,5 @@
 // mancalaJS by aquarock
+// WARN Bug with move sequence 8, 6, 3
 
 // Array that records all of the moves made in the game
 let boardMoves = [];
@@ -22,10 +23,17 @@ const BOARDHEIGHT = 2;
 const BUTTONPOS = screenToWorld(vec2(-310, -155));
 const BUTTONSIZE = 1.25;
 
+const PLAYERA = "playerA";
+const PLAYERB = "playerB";
+
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 	cameraScale -= 1.5;
 	initBoard();
+}
+
+function playerHome(player) {
+	return player === PLAYERA ? 0 : 7;
 }
 
 function isMouseOverValidPocket(pocketPos) {
@@ -50,7 +58,9 @@ function gameUpdate() {
 	if (rewindButton()) boardMoves.pop();
 
 	for (const pos of getPocketPos())
-		if (isMouseOverValidPocket(pos)) playMove(pos.index);
+		if (isMouseOverValidPocket(pos)) {
+			let moveInfo = playMove(PLAYERB, pos.index);
+		}
 }
 
 // ==================== BOARD LOGIC ====================
@@ -62,7 +72,7 @@ function getPocketAt(location) {
 }
 
 // returns the pocket on the opposite side of the board
-function getEnemyPocket(pocket) {
+function getOppositePocket(pocket) {
 	return getBoardState()[
 		pocket.index < 7 ? -pocket.index + 14 : -(pocket.index - 14)
 	];
@@ -84,9 +94,11 @@ function getBoardState() {
 	return boardMoves.reduce(calcBoard, []);
 }
 
-// add a move to the list, returns the number of captured marbles
-function playMove(startingPocketIndex) {
+// add a move to the list
+// returns the number of captured marbles and if the player can move again
+function playMove(player, startingPocketIndex) {
 	let pocket = getPocketAt(startingPocketIndex);
+	if (pocket.count === 0) return null;
 	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
 	let doCapture = finalPocket.count === 0 && !finalPocket.home;
 
@@ -103,24 +115,28 @@ function playMove(startingPocketIndex) {
 			: Pocket(i, p.count, p.home);
 	};
 
-	// update the state of the board with the non-capturing move
+	// update the state of the board with the move and return if not capping
 	boardMoves.push(move);
-	if (!doCapture) return 0;
-	let targetPocket = getEnemyPocket(finalPocket);
+	if (!doCapture) return { captureCount: 0, goAgain: finalPocket.home };
 
-	// TODO curry onto the move
-	captureFunc = (p) =>
-		p.index === targetPocket.index
-			? Pocket(p.index, 0, p.home)
-			: Pocket(p.index, p.count, p.home);
+	// get the targetPocket after pushing the move
+	let targetPocket = getOppositePocket(finalPocket);
 	boardMoves.pop();
-	boardMoves.push((i, p, state) => captureFunc(move(i, p, state)));
 
-	return targetPocket.count;
+	removeMarbles = (p) =>
+		p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p;
+
+	addMarbles = (p) =>
+		playerHome(player) == p.index
+			? Pocket(p.index, p.count + targetPocket.count, p.home)
+			: p;
+
+	boardMoves.push((i, p, state) =>
+		addMarbles(removeMarbles(move(i, p, state))),
+	);
+
+	return { captureCount: targetPocket.count, goAgain: finalPocket.home };
 }
-
-// TODO capture(),
-// curry a function onto the most recent move function
 
 // create moves that set up the board
 function initBoard() {
