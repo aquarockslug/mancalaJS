@@ -1,8 +1,8 @@
 -- Script to combine game.js and littlejs.js into index.html
 
-local engine_file = io.open("dist.littlejs.min.js", "r")
+local engine_file = io.open("littlejs.min.js", "r")
 if not engine_file then
-	print("Error: Could not open dist.littlejs.js")
+	print("Error: Could not open littlejs.js")
 	return
 end
 local engine_content = engine_file:read("*all")

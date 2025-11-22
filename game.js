@@ -19,7 +19,7 @@ const PLAYERA = "playerA",
 
 let gameMoves = []; // functions representing all of the moves
 let gameInfo = []; // information about each move
-let currentPlayer = PLAYERA;
+let currentPlayer = PLAYERB;
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
