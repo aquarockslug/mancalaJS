@@ -6,25 +6,20 @@ let boardMoves = [];
 
 Pocket = (index, count, home) => ({ index, count, home });
 
-const SANDRED = new Color(0.78, 0.28, 0.03);
-const SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63);
-const SANDORANGE = new Color(0.97, 0.6, 0.22);
-
-const INITMARBLECOUNT = 3;
-const MARBLECOLOR = SANDRED;
-const MARBLESIZE = 0.35;
-
-const POCKETPOS = vec2(-10.4, -2.25);
-const POCKETSIZE = vec2(2.6);
-
-const BOARDWIDTH = 8;
-const BOARDHEIGHT = 2;
-
-const BUTTONPOS = screenToWorld(vec2(-310, -155));
-const BUTTONSIZE = 1.25;
-
-const PLAYERA = "playerA";
-const PLAYERB = "playerB";
+const SANDRED = new Color(0.78, 0.28, 0.03),
+	SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63),
+	SANDORANGE = new Color(0.97, 0.6, 0.22);
+const INITMARBLECOUNT = 3,
+	MARBLECOLOR = SANDRED,
+	MARBLESIZE = 0.35;
+const POCKETPOS = vec2(-10.4, -2.25),
+	POCKETSIZE = vec2(2.6);
+const BOARDWIDTH = 8,
+	BOARDHEIGHT = 2;
+const BUTTONPOS = screenToWorld(vec2(-310, -155)),
+	BUTTONSIZE = 1.25;
+const PLAYERA = "playerA",
+	PLAYERB = "playerB";
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
@@ -102,35 +97,28 @@ function playMove(player, startingPocketIndex) {
 	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
 	let doCapture = finalPocket.count === 0 && !finalPocket.home;
 
-	let move = (i, p, state) => {
+	const move = (i, p, state) => {
 		const start = state[startingPocketIndex];
 		const crossing = start.index % 15 > (start.index + start.count) % 14;
-
 		const shouldUpdate =
 			(i >= start.index && i <= start.index + start.count) ||
 			(crossing && i <= (start.index + start.count) % 14);
-
 		return shouldUpdate
 			? Pocket(i, i === start.index ? 0 : p.count + 1, p.home)
 			: Pocket(i, p.count, p.home);
 	};
 
-	// update the state of the board with the move and return if not capping
 	boardMoves.push(move);
 	if (!doCapture) return { captureCount: 0, goAgain: finalPocket.home };
 
-	// get the targetPocket after pushing the move
 	let targetPocket = getOppositePocket(finalPocket);
 	boardMoves.pop();
-
-	removeMarbles = (p) =>
+	const removeMarbles = (p) =>
 		p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p;
-
-	addMarbles = (p) =>
+	const addMarbles = (p) =>
 		playerHome(player) == p.index
 			? Pocket(p.index, p.count + targetPocket.count, p.home)
 			: p;
-
 	boardMoves.push((i, p, state) =>
 		addMarbles(removeMarbles(move(i, p, state))),
 	);
