@@ -68,6 +68,10 @@ function getEnemyPocket(pocket) {
 	];
 }
 
+function getOppositeIndex(index) {
+	return index < 7 ? -index + 14 : -(index - 14);
+}
+
 // iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
 	for (let i = 0; i < BOARDHEIGHT * BOARDWIDTH - 2; i++)
@@ -80,11 +84,10 @@ function getBoardState() {
 	return boardMoves.reduce(calcBoard, []);
 }
 
-// add a move to the list
+// add a move to the list, returns the number of captured marbles
 function playMove(startingPocketIndex) {
 	let pocket = getPocketAt(startingPocketIndex);
 	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
-	let oppositePocket = getEnemyPocket(pocket);
 	let doCapture = finalPocket.count === 0 && !finalPocket.home;
 
 	let move = (i, p, state) => {
@@ -102,17 +105,18 @@ function playMove(startingPocketIndex) {
 
 	// update the state of the board with the non-capturing move
 	boardMoves.push(move);
-
-	if (doCapture) console.log("cap");
-
-	console.warn("DEBUGPRINT[15]: game.js:101: pocket=", pocket);
-	console.warn("DEBUGPRINT[14]: game.js:102: finalPocket=", finalPocket);
+	if (!doCapture) return 0;
+	let targetPocket = getEnemyPocket(finalPocket);
 
 	// TODO curry onto the move
 	captureFunc = (p) =>
-		p.index === enemyPocket.index
-			? Pocket(p.index, 0, false)
-			: Pocket(p.index, p.count, false);
+		p.index === targetPocket.index
+			? Pocket(p.index, 0, p.home)
+			: Pocket(p.index, p.count, p.home);
+	boardMoves.pop();
+	boardMoves.push((i, p, state) => captureFunc(move(i, p, state)));
+
+	return targetPocket.count;
 }
 
 // TODO capture(),
