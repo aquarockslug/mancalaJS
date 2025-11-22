@@ -39,23 +39,19 @@ const isMouseOverValidPocket = (pocketPos) =>
 
 const rewindButton = () => gameMoves.length > 3 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
 
-function getRandomValidMove(player) {
-	const validMoves = [];
-	const state = getBoardState();
-	const isPlayerA = player === PLAYERA;
-	const startIndex = isPlayerA ? 8 : 1;
-	const endIndex = isPlayerA ? 15 : 6;
-
-	for (let i = startIndex; i <= endIndex; i++) if (state[i] && state[i].count > 0) validMoves.push(i);
-
-	if (validMoves.length === 0) return null;
-	return validMoves[Math.floor(Math.random() * validMoves.length)];
-}
-
 function gameUpdate() {
 	if (cpuDelay.elapsed() && currentPlayer === PLAYERA && !MULTIPLAYER) {
-		cpuMove(PLAYERA);
+		cpuTurn(PLAYERA);
 		cpuDelay.set(1);
+	} else {
+		// make sure there is at least one move the player can make
+		let movesAvaliable = false;
+		state = getBoardState();
+		for (let i = 1; i < 7; i++) if (state[i].count > 0) movesAvaliable = true;
+		if (!movesAvaliable) {
+			currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
+			return;
+		}
 	}
 
 	if (!mouseWasPressed(0)) return;
@@ -64,7 +60,7 @@ function gameUpdate() {
 		gameInfo = gameInfo.slice(0, MULTIPLAYER ? -1 : -2);
 	} else {
 		// player move
-		if (currentPlayer !== PLAYERA) for (const pos of getPocketPos()) if (isMouseOverValidPocket(pos)) playTurn(pos);
+		if (currentPlayer === PLAYERB) for (const pos of getPocketPos()) if (isMouseOverValidPocket(pos)) playTurn(pos);
 		cpuDelay.set(1);
 	}
 }
@@ -77,7 +73,7 @@ function playTurn(pos) {
 	else currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
 }
 
-function cpuMove(player) {
+function cpuTurn(player) {
 	if (player !== currentPlayer) return;
 
 	const state = getBoardState();
@@ -117,8 +113,7 @@ function cpuMove(player) {
 		const positions = getPocketPos();
 		const targetPos = positions.find((pos) => pos.index === bestMove);
 		if (targetPos) playTurn(targetPos);
-		if (!gameInfo[gameInfo.length - 1].goAgain)
-			currentPlayer = PLAYERB
+		if (!gameInfo[gameInfo.length - 1].goAgain) currentPlayer = PLAYERB;
 	}
 }
 
