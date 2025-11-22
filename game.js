@@ -34,6 +34,8 @@ function playerHome(player) {
 function isMouseOverValidPocket(pocketPos) {
 	return (
 		mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
+		((pocketPos.index > 7 && currentPlayer === PLAYERA) ||
+			(pocketPos.index < 7 && currentPlayer === PLAYERB)) &&
 		pocketPos.index > 0 &&
 		pocketPos.index !== 7 &&
 		pocketPos.index !== 16
