@@ -50,20 +50,22 @@ function gameUpdate() {
 	if (rewindButton()) boardMoves.pop();
 
 	for (const pos of getPocketPos())
-		if (isMouseOverValidPocket(pos)) {
-			playMove(pos.index);
-			let pocket = getPocketAt(pos);
-			getEnemyPocket(pocket);
-		}
+		if (isMouseOverValidPocket(pos)) playMove(pos.index);
 }
 
 // ==================== BOARD LOGIC ====================
 
+// returns the pocket at the given index or position
+function getPocketAt(location) {
+	if (typeof location === "object") return getBoardState()[location.index];
+	else return getBoardState()[location];
+}
+
 // returns the pocket on the opposite side of the board
 function getEnemyPocket(pocket) {
-	// pocket.index
-	// getBoardState(enemyIndex)
-	return pocket;
+	return getBoardState()[
+		pocket.index < 7 ? -pocket.index + 14 : -(pocket.index - 14)
+	];
 }
 
 // iterates through all pockets and applies the move function
@@ -80,7 +82,12 @@ function getBoardState() {
 
 // add a move to the list
 function playMove(startingPocketIndex) {
-	boardMoves.push((i, m, state) => {
+	let pocket = getPocketAt(startingPocketIndex);
+	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
+	let oppositePocket = getEnemyPocket(pocket);
+	let doCapture = finalPocket.count === 0 && !finalPocket.home;
+
+	let move = (i, p, state) => {
 		const start = state[startingPocketIndex];
 		const crossing = start.index % 15 > (start.index + start.count) % 14;
 
@@ -89,9 +96,23 @@ function playMove(startingPocketIndex) {
 			(crossing && i <= (start.index + start.count) % 14);
 
 		return shouldUpdate
-			? Pocket(i, i === start.index ? 0 : m.count + 1, m.home)
-			: Pocket(i, m.count, m.home);
-	});
+			? Pocket(i, i === start.index ? 0 : p.count + 1, p.home)
+			: Pocket(i, p.count, p.home);
+	};
+
+	// update the state of the board with the non-capturing move
+	boardMoves.push(move);
+
+	if (doCapture) console.log("cap");
+
+	console.warn("DEBUGPRINT[15]: game.js:101: pocket=", pocket);
+	console.warn("DEBUGPRINT[14]: game.js:102: finalPocket=", finalPocket);
+
+	// TODO curry onto the move
+	captureFunc = (p) =>
+		p.index === enemyPocket.index
+			? Pocket(p.index, 0, false)
+			: Pocket(p.index, p.count, false);
 }
 
 // TODO capture(),
@@ -182,10 +203,6 @@ function drawButton() {
 		32,
 		BLACK,
 	);
-}
-
-function getPocketAt(pocketPos) {
-	return getBoardState()[pocketPos.index];
 }
 
 function gameRender() {
