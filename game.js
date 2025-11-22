@@ -19,7 +19,7 @@ const POCKETSIZE = vec2(2.6);
 const BOARDWIDTH = 8;
 const BOARDHEIGHT = 2;
 
-const BUTTONPOS = screenToWorld(vec2( -310, -155 ));
+const BUTTONPOS = screenToWorld(vec2(-310, -155));
 const BUTTONSIZE = 1.25;
 
 function gameInit() {
@@ -39,7 +39,9 @@ function isMouseOverValidPocket(pocketPos) {
 }
 
 function rewindButton() {
-	return boardMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
+	return (
+		boardMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2
+	);
 }
 
 function gameUpdate() {
@@ -50,13 +52,19 @@ function gameUpdate() {
 	for (const pos of getPocketPos())
 		if (isMouseOverValidPocket(pos)) {
 			playMove(pos.index);
-			// state = getBoardState()
+			let pocket = getPocketAt(pos);
+			getEnemyPocket(pocket);
 		}
 }
 
 // ==================== BOARD LOGIC ====================
 
-// TODO getEnemyPocket() returns the pocket on the opposite side of the board
+// returns the pocket on the opposite side of the board
+function getEnemyPocket(pocket) {
+	// pocket.index
+	// getBoardState(enemyIndex)
+	return pocket;
+}
 
 // iterates through all pockets and applies the move function
 function* moveMarbles(state, move) {
@@ -76,10 +84,9 @@ function playMove(startingPocketIndex) {
 		const start = state[startingPocketIndex];
 		const crossing = start.index % 15 > (start.index + start.count) % 14;
 
-		const shouldUpdate = (
+		const shouldUpdate =
 			(i >= start.index && i <= start.index + start.count) ||
-			(crossing && i <= (start.index + start.count) % 14)
-		);
+			(crossing && i <= (start.index + start.count) % 14);
 
 		return shouldUpdate
 			? Pocket(i, i === start.index ? 0 : m.count + 1, m.home)
@@ -87,17 +94,17 @@ function playMove(startingPocketIndex) {
 	});
 }
 
-// TODO capture(), 
+// TODO capture(),
 // curry a function onto the most recent move function
 
 // create moves that set up the board
 function initBoard() {
 	boardMoves = [
 		(i, _) => Pocket(i, null, false),
-		(i, m) => {
-			if (m?.index === 0 || m?.index === 7) return Pocket(i, 0, true);
-			else return Pocket(i, INITMARBLECOUNT, false);
-		},
+		(i, m) =>
+			m?.index === 0 || m?.index === 7
+				? Pocket(i, 0, true)
+				: Pocket(i, INITMARBLECOUNT, false),
 	];
 }
 
@@ -150,13 +157,12 @@ function drawHomePocket(pos, count) {
 
 function drawMarbles(pos, count) {
 	const getOffset = (i) =>
-		i < 7 ? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0
-		      : MARBLESIZE * 1.25)
-		: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
+		i < 7
+			? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25)
+			: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
 
-	for (let i = 0; i < count; i++) {
+	for (let i = 0; i < count; i++)
 		drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
-	}
 }
 
 function drawBackground() {
@@ -168,9 +174,7 @@ function drawBackground() {
 function drawButton() {
 	const isHovered = BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2;
 
-	if (isHovered) {
-		drawCircle(BUTTONPOS, BUTTONSIZE + 0.1, BLACK);
-	}
+	if (isHovered) drawCircle(BUTTONPOS, BUTTONSIZE + 0.1, BLACK);
 	drawCircle(BUTTONPOS, BUTTONSIZE, SANDRED);
 	drawTextScreen(
 		"\u20D4",
@@ -181,7 +185,7 @@ function drawButton() {
 }
 
 function getPocketAt(pocketPos) {
-	return getBoardState()[pocketPos.index]
+	return getBoardState()[pocketPos.index];
 }
 
 function gameRender() {
@@ -199,12 +203,10 @@ function gameRender() {
 		const pocket = getPocketAt(pos);
 
 		// draw pocket
-		if (pocket.index === 0 || pocket.index === 7) {
+		if (pocket.index === 0 || pocket.index === 7)
 			drawHomePocket(pos.value, pocket.count);
-		} else {
-			if (isMouseOverValidPocket(pos)) {
-				drawCircle(pos.value, 2.5, BLACK);
-			}
+		else {
+			if (isMouseOverValidPocket(pos)) drawCircle(pos.value, 2.5, BLACK);
 			drawCircle(pos.value, 2.4, SANDORANGE);
 		}
 
