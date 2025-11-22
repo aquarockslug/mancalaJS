@@ -117,7 +117,8 @@ function cpuMove(player) {
 		const positions = getPocketPos();
 		const targetPos = positions.find((pos) => pos.index === bestMove);
 		if (targetPos) playTurn(targetPos);
-		if (!gameInfo[gameInfo.length - 1].goAgain) currentPlayer = PLAYERB
+		if (!gameInfo[gameInfo.length - 1].goAgain)
+			currentPlayer = PLAYERB
 	}
 }
 
@@ -192,9 +193,9 @@ function getPocketPos() {
 function drawHomePocket(pos, count) {
 	const center = pos.value.add(vec2(0, 1.625));
 	if (playerHome(currentPlayer) === pos.index) {
-		drawCircle(pos.value, 2.5, BLACK);
-		drawCircle(pos.value.add(vec2(0, 3)), 2.5, BLACK);
-		drawRect(center, vec2(2.5, 3), BLACK);
+		drawCircle(pos.value, 2.6, BLACK);
+		drawCircle(pos.value.add(vec2(0, 3)), 2.6, BLACK);
+		drawRect(center, vec2(2.6, 3), BLACK);
 	}
 	drawCircle(pos.value, 2.4, SANDORANGE);
 	drawCircle(pos.value.add(vec2(0, 3)), 2.4, SANDORANGE);
@@ -219,7 +220,7 @@ function drawBackground() {
 function drawButton() {
 	const isHovered = BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2;
 	drawCircle(BUTTONPOS, BUTTONSIZE, BLACK);
-	drawCircle(BUTTONPOS, isHovered ? BUTTONSIZE - 0.1 : BUTTONSIZE, SANDRED);
+	drawCircle(BUTTONPOS, isHovered ? BUTTONSIZE - 0.2 : BUTTONSIZE, SANDRED);
 	drawTextScreen("\u20D4", worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))), 32, BLACK);
 }
 
@@ -234,7 +235,7 @@ function gameRender() {
 		if (pocket.index === 0 || pocket.index === 7) drawHomePocket(pos, pocket.count);
 		else {
 			if (isMouseOverValidPocket(pos)) drawCircle(pos.value, 2.5, BLACK);
-			drawCircle(pos.value, 2.4, SANDORANGE);
+			drawCircle(pos.value, 2.3, SANDORANGE);
 		}
 		drawMarbles(pos.value, pocket.count);
 	}
