@@ -1,4 +1,5 @@
 // mancalaJS by aquarock
+
 Pocket = (index, count, home) => ({ index, count, home });
 
 const SANDRED = new Color(0.78, 0.28, 0.03),
@@ -22,7 +23,7 @@ let gameInfo = []; // information about each move
 let currentPlayer = PLAYERB;
 let cpuDelay = new Timer(1);
 
-// Animation system
+// animation system
 let animatingMarbles = [];
 let animationSpeed = 0.15; // seconds per pocket movement
 let captureAnimation = null;
@@ -45,10 +46,10 @@ const isMouseOverValidPocket = (pocketPos) =>
 const rewindButton = () => gameMoves.length > 3 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
 
 function gameUpdate() {
-	// Update marble animations
+	// update marble animations
 	updateMarbleAnimations();
 
-	// Don't process moves while animating
+	// don't process moves while animating
 	if (animatingMarbles.length > 0 || captureAnimation) return;
 
 	if (cpuDelay.elapsed() && currentPlayer === PLAYERA && !MULTIPLAYER) {
@@ -80,7 +81,7 @@ function playTurn(pos) {
 	let pocket = getPocketAt(pos);
 	if (pocket.count === 0) return null;
 
-	// Start animation instead of immediately applying the move
+	// start animation instead of immediately applying the move
 	startMarbleAnimation(pocket, currentPlayer, pos.index);
 }
 
@@ -124,11 +125,10 @@ function cpuTurn(player) {
 		const positions = getPocketPos();
 		const targetPos = positions.find((pos) => pos.index === bestMove);
 		if (targetPos) playTurn(targetPos);
-		if (!gameInfo[gameInfo.length - 1].goAgain) currentPlayer = PLAYERB;
 	}
 }
 
-// ==================== BOARD LOGIC ====================
+// ==================== board logic ====================
 // returns the pocket at the given index or position
 const getPocketAt = (location) =>
 	typeof location === "object" ? getBoardState()[location.index] : getBoardState()[location];
@@ -178,27 +178,27 @@ function initBoard() {
 	];
 }
 
-// ==================== ANIMATION SYSTEM ====================
+// ==================== animations ====================
 
 function startMarbleAnimation(pocket, player, startingPocketIndex) {
 	const positions = getPocketPos();
 	const startPos = positions.find((p) => p.index === startingPocketIndex);
 	const marbleCount = pocket.count;
 
-	// Calculate the path for each marble
+	// calculate the path for each marble
 	const path = [];
 	let currentIndex = startingPocketIndex;
 
 	for (let i = 0; i < marbleCount; i++) {
 		currentIndex = (currentIndex + 1) % 14;
-		// Skip opponent's home pocket
+		// skip opponent's home pocket
 		if ((player === PLAYERA && currentIndex === 7) || (player === PLAYERB && currentIndex === 0)) {
 			currentIndex = (currentIndex + 1) % 14;
 		}
 		path.push(currentIndex);
 	}
 
-	// Create animation for each marble
+	// create animation for each marble
 	for (let i = 0; i < marbleCount; i++) {
 		const marblePath = path.slice(i);
 		animatingMarbles.push({
@@ -213,88 +213,105 @@ function startMarbleAnimation(pocket, player, startingPocketIndex) {
 	}
 }
 
+function updateSingleMarble(marble, positions) {
+	marble.progress += timeDelta / animationSpeed;
+
+	if (marble.progress >= 1) {
+		// move to next pocket in path
+		marble.pathIndex++;
+		if (marble.pathIndex < marble.path.length) {
+			marble.targetIndex = marble.path[marble.pathIndex];
+			marble.progress = 0;
+			return false; // not complete
+		}
+		return true; // complete
+	}
+	return false; // not complete
+}
+
+function updateMarblePosition(marble, positions) {
+	if (marble.pathIndex < marble.path.length) {
+		const targetPos = positions.find((p) => p.index === marble.path[marble.pathIndex]);
+		if (targetPos) {
+			const currentPos =
+				marble.pathIndex > 0
+					? positions.find((p) => p.index === marble.path[marble.pathIndex - 1])?.value
+					: positions.find((p) => p.index === marble.startingIndex)?.value;
+
+			if (currentPos) {
+				marble.currentPos = currentPos.lerp(targetPos.value, marble.progress);
+			}
+		}
+	}
+}
+
+function updateRegularMarbleAnimations() {
+	if (animatingMarbles.length === 0) return;
+
+	const positions = getPocketPos();
+	let allComplete = true;
+
+	for (const marble of animatingMarbles) {
+		const isComplete = updateSingleMarble(marble, positions);
+		if (!isComplete) {
+			allComplete = false;
+		}
+		updateMarblePosition(marble, positions);
+	}
+
+	if (allComplete) {
+		completeMarbleAnimation();
+	}
+}
+
+function completeMarbleAnimation() {
+	const firstMarble = animatingMarbles[0];
+	const pocket = getPocketAt(firstMarble.startingIndex);
+	const moveResult = playMove(pocket, currentPlayer, firstMarble.startingIndex);
+	gameInfo.push(moveResult);
+	animatingMarbles = [];
+
+	// start capture animation if marbles were captured
+	if (moveResult.captureCount > 0) {
+		startCaptureAnimation(moveResult, currentPlayer);
+	} else if (!moveResult.goAgain) {
+		currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
+	}
+}
+
+function updateCaptureAnimation() {
+	if (!captureAnimation) return;
+
+	captureAnimation.progress += timeDelta / animationSpeed;
+
+	if (captureAnimation.progress >= 1) {
+		captureAnimation = null;
+		// check if we need to switch turns after capture
+		if (gameInfo.length > 0 && !gameInfo[gameInfo.length - 1].goAgain) {
+			currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
+		}
+	}
+}
+
 function updateMarbleAnimations() {
-	// Update regular marble animations
-	if (animatingMarbles.length > 0) {
-		const positions = getPocketPos();
-		let allComplete = true;
-
-		for (const marble of animatingMarbles) {
-			marble.progress += timeDelta / animationSpeed;
-
-			if (marble.progress >= 1) {
-				// Move to next pocket in path
-				marble.pathIndex++;
-				if (marble.pathIndex < marble.path.length) {
-					marble.targetIndex = marble.path[marble.pathIndex];
-					marble.progress = 0;
-					allComplete = false;
-				}
-			} else {
-				allComplete = false;
-			}
-
-			// Update position
-			if (marble.pathIndex < marble.path.length) {
-				const targetPos = positions.find((p) => p.index === marble.path[marble.pathIndex]);
-				if (targetPos) {
-					const currentPos =
-						marble.pathIndex > 0
-							? positions.find((p) => p.index === marble.path[marble.pathIndex - 1])?.value
-							: positions.find((p) => p.index === marble.startingIndex)?.value;
-
-					if (currentPos) {
-						marble.currentPos = currentPos.lerp(targetPos.value, marble.progress);
-					}
-				}
-			}
-		}
-
-		// When animation completes, apply the actual move
-		if (allComplete) {
-			const firstMarble = animatingMarbles[0];
-			const pocket = getPocketAt(firstMarble.startingIndex);
-			const moveResult = playMove(pocket, currentPlayer, firstMarble.startingIndex);
-			gameInfo.push(moveResult);
-			animatingMarbles = [];
-
-			// Start capture animation if marbles were captured
-			if (moveResult.captureCount > 0) {
-				startCaptureAnimation(moveResult, currentPlayer);
-			} else if (!moveResult.goAgain) {
-				currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
-			}
-		}
-	}
-
-	// Update capture animation
-	if (captureAnimation) {
-		captureAnimation.progress += timeDelta / animationSpeed;
-
-		if (captureAnimation.progress >= 1) {
-			captureAnimation = null;
-			// Check if we need to switch turns after capture
-			if (gameInfo.length > 0 && !gameInfo[gameInfo.length - 1].goAgain) {
-				currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
-			}
-		}
-	}
+	updateRegularMarbleAnimations();
+	updateCaptureAnimation();
 }
 
 function startCaptureAnimation(moveResult, player) {
 	const positions = getPocketPos();
 	const state = getBoardState();
 
-	// Find the final pocket where the last marble landed
+	// find the final pocket where the last marble landed
 	const lastMove = gameMoves[gameMoves.length - 1];
 	let finalPocketIndex = -1;
 
-	// We need to determine which pocket was the final destination
-	// This is a bit tricky since we need to reconstruct the move
+	// we need to determine which pocket was the final destination
+	// this is a bit tricky since we need to reconstruct the move
 	for (let i = 0; i < 14; i++) {
 		const pocket = state[i];
 		if (pocket && !pocket.home && pocket.count === 1) {
-			// This could be our final pocket - check if it was empty before
+			// this could be our final pocket - check if it was empty before
 			finalPocketIndex = i;
 			break;
 		}
@@ -302,7 +319,7 @@ function startCaptureAnimation(moveResult, player) {
 
 	if (finalPocketIndex === -1) return;
 
-	// Get the opposite pocket (where captured marbles came from)
+	// get the opposite pocket (where captured marbles came from)
 	const oppositeIndex = getOppositeIndex(finalPocketIndex);
 	const oppositePos = positions.find((p) => p.index === oppositeIndex);
 	const homePos = positions.find((p) => p.index === playerHome(player));
@@ -310,14 +327,14 @@ function startCaptureAnimation(moveResult, player) {
 	if (oppositePos && homePos) {
 		captureAnimation = {
 			fromPos: oppositePos.value.copy(),
-			toPos: homePos.value.add(vec2(0, 1.625)), // Center of home pocket
+			toPos: homePos.value.add(vec2(0, 1.625)), // center of home pocket
 			progress: 0,
 			marbleCount: moveResult.captureCount,
 		};
 	}
 }
 
-// ==================== RENDERING ====================
+// ==================== rendering ====================
 
 // returns an array of objects with pocket index and screen position
 function getPocketPos() {
@@ -354,7 +371,7 @@ function drawMarbles(pos, count, pocketIndex) {
 			? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25)
 			: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
 
-	// Don't draw marbles that are currently animating from this pocket
+	// don't draw marbles that are currently animating from this pocket
 	let marblesToSkip = 0;
 	for (const marble of animatingMarbles) {
 		if (marble.startingIndex === pocketIndex && marble.pathIndex === 0) {
@@ -366,16 +383,16 @@ function drawMarbles(pos, count, pocketIndex) {
 }
 
 function drawAnimatingMarbles() {
-	// Draw regular animating marbles
+	// draw regular animating marbles
 	for (const marble of animatingMarbles) {
 		drawCircle(marble.currentPos, MARBLESIZE, MARBLECOLOR);
 	}
 
-	// Draw capture animation
+	// draw capture animation
 	if (captureAnimation) {
 		const currentPos = captureAnimation.fromPos.lerp(captureAnimation.toPos, captureAnimation.progress);
 
-		// Draw captured marbles in a small cluster during animation
+		// draw captured marbles in a small cluster during animation
 		const getCaptureOffset = (i) => {
 			if (i === 0) return vec2(0, 0);
 			const angle = (Math.PI * 2 * i) / captureAnimation.marbleCount;
@@ -407,16 +424,6 @@ function gameRender() {
 	drawBackground();
 	drawButton();
 
-	if (
-		gameInfo.length > 0 &&
-		gameInfo[gameInfo.length - 1].goAgain &&
-		animatingMarbles.length === 0 &&
-		!captureAnimation &&
-		currentPlayer === PLAYERB
-	) {
-		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
-	}
-
 	for (const pos of positions) {
 		if (pos.index < 0) continue;
 		const pocket = getPocketAt(pos);
@@ -428,7 +435,11 @@ function gameRender() {
 		drawMarbles(pos.value, pocket.count, pos.index);
 	}
 
-	// Draw animating marbles on top
+	if (gameInfo.length > 0 && gameInfo[gameInfo.length - 1].goAgain && currentPlayer === PLAYERB) {
+		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
+	}
+
+	// draw animating marbles on top
 	drawAnimatingMarbles();
 
 	const rulesText =
