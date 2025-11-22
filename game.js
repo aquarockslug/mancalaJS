@@ -21,224 +21,169 @@ let gameMoves = []; // functions representing all of the moves
 let gameInfo = []; // information about each move
 let currentPlayer = PLAYERB;
 
-function gameInit() {
+const gameInit = () => {
 	setCanvasFixedSize(vec2(640, 360));
 	cameraScale -= 1.5;
 	initBoard();
-}
+};
 
-function playerHome(player) {
-	return player === PLAYERA ? 0 : 7;
-}
+const playerHome = (player) => (player === PLAYERA ? 0 : 7);
 
-function isMouseOverValidPocket(pocketPos) {
-	return (
-		mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
-		((pocketPos.index > 7 && currentPlayer === PLAYERA) ||
-			(pocketPos.index < 7 && currentPlayer === PLAYERB)) &&
-		pocketPos.index > 0 &&
-		pocketPos.index !== 7 &&
-		pocketPos.index !== 16
-	);
-}
+const isMouseOverValidPocket = (pocketPos) =>
+	mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
+	((pocketPos.index > 7 && currentPlayer === PLAYERA) || (pocketPos.index < 7 && currentPlayer === PLAYERB)) &&
+	pocketPos.index > 0 &&
+	pocketPos.index !== 7 &&
+	pocketPos.index !== 16;
 
-function rewindButton() {
-	return (
-		gameMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2
-	);
-}
+const rewindButton = () => gameMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
 
-function gameUpdate() {
+const gameUpdate = () => {
 	if (!mouseWasPressed(0)) return;
 	if (rewindButton()) {
 		gameMoves.pop();
 		gameInfo.pop();
 	} else {
-		for (const pos of getPocketPos())
-			if (isMouseOverValidPocket(pos)) playTurn(pos);
+		for (const pos of getPocketPos()) if (isMouseOverValidPocket(pos)) playTurn(pos);
 	}
-}
+};
 
-function playTurn(pos) {
+const playTurn = (pos) => {
 	let pocket = getPocketAt(pos);
 	if (pocket.count === 0) return null;
-
 	gameInfo.push(playMove(pocket, currentPlayer, pos.index));
-
 	if (gameInfo[gameInfo.length - 1].goAgain) return;
 	else currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
-}
+};
 
 // ==================== BOARD LOGIC ====================
-
 // returns the pocket at the given index or position
-function getPocketAt(location) {
-	if (typeof location === "object") return getBoardState()[location.index];
-	else return getBoardState()[location];
-}
-
+const getPocketAt = (location) =>
+	typeof location === "object" ? getBoardState()[location.index] : getBoardState()[location];
 // returns the pocket on the opposite side of the board
-function getOppositePocket(pocket) {
-	return getBoardState()[
-		pocket.index < 7 ? -pocket.index + 14 : -(pocket.index - 14)
-	];
-}
-
-function getOppositeIndex(index) {
-	return index < 7 ? -index + 14 : -(index - 14);
-}
+const getOppositePocket = (pocket) => getBoardState()[pocket.index < 7 ? -pocket.index + 14 : -(pocket.index - 14)];
+const getOppositeIndex = (index) => (index < 7 ? -index + 14 : -(index - 14));
 
 // iterates through all pockets and applies the move function
-function* moveMarbles(state, move) {
-	for (let i = 0; i < BOARDHEIGHT * BOARDWIDTH - 2; i++)
-		yield move(i, state[i], state);
-}
+const moveMarbles = function* (state, move) {
+	for (let i = 0; i < BOARDHEIGHT * BOARDWIDTH - 2; i++) yield move(i, state[i], state);
+};
 
 // returns an array representing the current marble count in each pocket
-function getBoardState() {
+const getBoardState = () => {
 	const calcBoard = (acc, curr) => Array.from(moveMarbles(acc, curr));
 	return gameMoves.reduce(calcBoard, []);
-}
+};
 
 // add a move to the list
 // returns the number of captured marbles and if the player can move again
-function playMove(pocket, player, startingPocketIndex) {
+const playMove = (pocket, player, startingPocketIndex) => {
 	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
 	let doCapture = finalPocket.count === 0 && !finalPocket.home;
-
 	const move = (i, p, state) => {
 		const start = state[startingPocketIndex];
 		const crossing = start.index % 15 > (start.index + start.count) % 14;
 		const shouldUpdate =
-			(i >= start.index && i <= start.index + start.count) ||
-			(crossing && i <= (start.index + start.count) % 14);
-		return shouldUpdate
-			? Pocket(i, i === start.index ? 0 : p.count + 1, p.home)
-			: Pocket(i, p.count, p.home);
+			(i >= start.index && i <= start.index + start.count) || (crossing && i <= (start.index + start.count) % 14);
+		return shouldUpdate ? Pocket(i, i === start.index ? 0 : p.count + 1, p.home) : Pocket(i, p.count, p.home);
 	};
-
 	gameMoves.push(move);
 	if (!doCapture) return { captureCount: 0, goAgain: finalPocket.home };
-
 	let targetPocket = getOppositePocket(finalPocket);
 	gameMoves.pop();
-	const removeMarbles = (p) =>
-		p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p;
-	const addMarbles = (p) =>
-		playerHome(player) == p.index
-			? Pocket(p.index, p.count + targetPocket.count, p.home)
-			: p;
+	const removeMarbles = (p) => (p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p);
+	const addMarbles = (p) => (playerHome(player) == p.index ? Pocket(p.index, p.count + targetPocket.count, p.home) : p);
 	gameMoves.push((i, p, state) => addMarbles(removeMarbles(move(i, p, state))));
 	return { captureCount: targetPocket.count, goAgain: finalPocket.home };
+};
+
+gameMoves.push(move);
+if (!doCapture) return { captureCount: 0, goAgain: finalPocket.home };
+
+let targetPocket = getOppositePocket(finalPocket);
+gameMoves.pop();
+const removeMarbles = (p) => (p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p);
+const addMarbles = (p) => (playerHome(player) == p.index ? Pocket(p.index, p.count + targetPocket.count, p.home) : p);
+gameMoves.push((i, p, state) => addMarbles(removeMarbles(move(i, p, state))));
+return { captureCount: targetPocket.count, goAgain: finalPocket.home };
 }
 
 // create moves that set up the board
-function initBoard() {
+const initBoard = () => {
 	gameMoves = [
 		(i, _) => Pocket(i, null, false),
-		(i, m) =>
-			m?.index === 0 || m?.index === 7
-				? Pocket(i, 0, true)
-				: Pocket(i, INITMARBLECOUNT, false),
+		(i, m) => (m?.index === 0 || m?.index === 7 ? Pocket(i, 0, true) : Pocket(i, INITMARBLECOUNT, false)),
 	];
-}
+};
 
 // ==================== RENDERING ====================
 
 // returns an array of objects with pocket index and screen position
-function getPocketPos() {
+const getPocketPos = () => {
 	const positions = [];
 	let i = 0;
 	for (let x = 0.5; x <= BOARDWIDTH; x++) {
 		i++;
-		positions.push({
-			index: i - 1,
-			value: vec2(x, 0.55).multiply(POCKETSIZE).add(POCKETPOS),
-		});
+		positions.push({ index: i - 1, value: vec2(x, 0.55).multiply(POCKETSIZE).add(POCKETPOS) });
 	}
 	for (let x = BOARDWIDTH - 0.5; x >= 0; x--) {
 		i++;
 		const pocketIndex = i === 9 || i === 16 ? -1 : i - 2;
-		positions.push({
-			index: pocketIndex,
-			value: vec2(x, 1.7).multiply(POCKETSIZE).add(POCKETPOS),
-		});
+		positions.push({ index: pocketIndex, value: vec2(x, 1.7).multiply(POCKETSIZE).add(POCKETPOS) });
 	}
 	return positions;
-}
+};
 
-function drawHomePocket(pos, count) {
+const drawHomePocket = (pos, count) => {
 	const center = pos.value.add(vec2(0, 1.625));
-
 	if (playerHome(currentPlayer) === pos.index) {
 		drawCircle(pos.value, 2.5, BLACK);
 		drawCircle(pos.value.add(vec2(0, 3)), 2.5, BLACK);
 		drawRect(center, vec2(2.5, 3), BLACK);
 	}
-
 	drawCircle(pos.value, 2.4, SANDORANGE);
 	drawCircle(pos.value.add(vec2(0, 3)), 2.4, SANDORANGE);
 	drawRect(center, vec2(2.4, 3), SANDORANGE);
-	drawTextScreen(
-		String(count),
-		worldToScreen(center),
-		32,
-		SANDORANGE,
-		2,
-		BLACK,
-	);
-}
+	drawTextScreen(String(count), worldToScreen(center), 32, SANDORANGE, 2, BLACK);
+};
 
-function drawMarbles(pos, count) {
+const drawMarbles = (pos, count) => {
 	const getOffset = (i) =>
 		i < 7
 			? vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25)
 			: vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
+	for (let i = 0; i < count; i++) drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
+};
 
-	for (let i = 0; i < count; i++)
-		drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
-}
-
-function drawBackground() {
+const drawBackground = () => {
 	drawRect(vec2(0), vec2(32), SANDLIGHTBROWN);
 	drawRect(vec2(0, 0.25), vec2(32, 7), SANDRED);
 	drawRect(vec2(0, -2.425), vec2(32, 0.05), BLACK);
-}
+};
 
-function drawButton() {
+const drawButton = () => {
 	const isHovered = BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2;
 	drawCircle(BUTTONPOS, BUTTONSIZE, BLACK);
 	drawCircle(BUTTONPOS, isHovered ? BUTTONSIZE - 0.1 : BUTTONSIZE, SANDRED);
-	drawTextScreen(
-		"\u20D4",
-		worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))),
-		32,
-		BLACK,
-	);
-}
+	drawTextScreen("\u20D4", worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))), 32, BLACK);
+};
 
-function gameRender() {
+const gameRender = () => {
 	const state = getBoardState();
 	const positions = getPocketPos();
-
 	drawBackground();
 	drawButton();
-
 	// draw each pocket and its marbles
 	for (const pos of positions) {
 		if (pos.index < 0) continue;
-
 		// get the pocket which is currently being drawn
 		const pocket = getPocketAt(pos);
-
 		// draw pocket
-		if (pocket.index === 0 || pocket.index === 7)
-			drawHomePocket(pos, pocket.count);
+		if (pocket.index === 0 || pocket.index === 7) drawHomePocket(pos, pocket.count);
 		else {
 			if (isMouseOverValidPocket(pos)) drawCircle(pos.value, 2.5, BLACK);
 			drawCircle(pos.value, 2.4, SANDORANGE);
 		}
-
 		drawMarbles(pos.value, pocket.count);
 	}
-}
+};
