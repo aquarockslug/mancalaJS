@@ -91,7 +91,7 @@ function gameUpdate() {
 		initBoard();
 	}
 	if (gameOver) return;
-	updateRegularMarbleAnimations();
+	updateMoveAnimations();
 	updateCaptureAnimation();
 	if (animatingMarbles.length > 0 || captureAnimation) return;
 	if (cpuDelay.elapsed() && currentPlayer === PLAYERA && !MULTIPLAYER) {
@@ -289,7 +289,7 @@ function updateMarblePosition(marble, positions) {
 	}
 }
 
-function updateRegularMarbleAnimations() {
+function updateMoveAnimations() {
 	if (animatingMarbles.length === 0) return;
 	const positions = getPocketPos();
 	let allComplete = true;
@@ -401,11 +401,8 @@ function drawMarbles(pos, count, pocketIndex) {
 	}
 	for (let i = 0; i < count - marblesToSkip; i++) {
 		const marblePos = pos.add(getOffset(i));
-		// Draw shadow for 3D effect
 		drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
-		// Draw main marble
 		drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
-		// Add highlight for 3D appearance
 		drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 	}
 }
@@ -420,11 +417,8 @@ function drawAnimatingMarbles() {
 		};
 		for (let i = 0; i < marble.marbleCount; i++) {
 			const marblePos = marble.currentPos.add(getOffset(i));
-			// Draw shadow for 3D effect
 			drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
-			// Draw main marble
 			drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
-			// Add highlight for 3D appearance
 			drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 		}
 	}
@@ -490,7 +484,13 @@ function gameRender() {
 			if (isMouseOverValidPocket(pos) && !gameOver) drawCircle(pos.value, 2.5, BLACK);
 			drawCircle(pos.value, 2.3, SANDORANGE);
 		}
-		drawMarbles(pos.value, pocket.count, pos.index);
+
+		let isAnimating = false;
+		// for (let a in animatingMarbles) if (a.startingIndex pocket.index) isAnimating = true;
+		if (pocket.index === 5) isAnimating === true
+
+		console.log(isAnimating);
+		drawMarbles(pos.value, isAnimating ? 0 : pocket.count, pos.index);
 	}
 }
 function postGameRender() {
