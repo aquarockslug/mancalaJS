@@ -22,7 +22,7 @@ const MULTIPLAYER = false;
 let gameMoves = [];
 let gameInfo = [];
 let currentPlayer = PLAYERB;
-let cpuDelay = new Timer(1);
+let cpuDelay = new Timer(1.5);
 let gameOver = false;
 let animatingMarbles = [];
 let animationSpeed = 0.15;
@@ -103,7 +103,7 @@ function gameUpdate() {
 			return;
 		}
 		cpuTurn(PLAYERA);
-		cpuDelay.set(1);
+		cpuDelay.set(1.5);
 	} else {
 		let movesAvaliable = false;
 		state = getBoardState();
@@ -136,7 +136,7 @@ function gameUpdate() {
 		gameInfo = gameInfo.slice(0, -1);
 	} else {
 		if (currentPlayer === PLAYERB) for (const pos of getPocketPos()) if (isMouseOverValidPocket(pos)) playTurn(pos);
-		cpuDelay.set(1);
+		cpuDelay.set(1.5);
 	}
 }
 
@@ -219,6 +219,8 @@ function initBoard() {
 		(i, _) => Pocket(i, null, false),
 		(i, m) => (m?.index === 0 || m?.index === 7 ? Pocket(i, 0, true) : Pocket(i, INITMARBLECOUNT, false)),
 	];
+	currentPlayer = PLAYERB;
+	gameInfo[({ captureCount: 0, goAgain: false }, { captureCount: 0, goAgain: false })];
 }
 
 // ==================== animations ====================
@@ -237,21 +239,28 @@ function startMarbleAnimation(pocket, player, startingPocketIndex) {
 		}
 		path.push(currentIndex);
 	}
-	for (let i = 0; i < marbleCount; i++) {
-		const marblePath = path.slice(i);
-		animatingMarbles.push({
-			currentPos: startPos.value.copy(),
-			targetIndex: marblePath[0],
-			path: marblePath,
-			pathIndex: 0,
-			progress: 0,
-			marbleIndex: i,
-			startingIndex: startingPocketIndex,
-		});
-	}
+	// Create a single animation group for all marbles
+	animatingMarbles.push({
+		currentPos: startPos.value.copy(),
+		targetIndex: path[0],
+		path: path,
+		pathIndex: 0,
+		progress: 0,
+		marbleCount: marbleCount,
+		startingIndex: startingPocketIndex,
+	});
 }
 
 function updateSingleMarble(marble, positions) {
+	// If this is the marble's final destination, stop it at the pocket center
+	if (marble.pathIndex === marble.path.length - 1) {
+		const finalPos = positions.find((p) => p.index === marble.path[marble.pathIndex]);
+		if (finalPos) {
+			marble.currentPos = finalPos.value;
+		}
+		return true;
+	}
+
 	marble.progress += timeDelta / animationSpeed;
 	if (marble.progress >= 1) {
 		marble.pathIndex++;
@@ -387,7 +396,7 @@ function drawMarbles(pos, count, pocketIndex) {
 	let marblesToSkip = 0;
 	for (const marble of animatingMarbles) {
 		if (marble.startingIndex === pocketIndex && marble.pathIndex === 0) {
-			marblesToSkip++;
+			marblesToSkip += marble.marbleCount;
 		}
 	}
 	for (let i = 0; i < count - marblesToSkip; i++) drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
@@ -395,7 +404,15 @@ function drawMarbles(pos, count, pocketIndex) {
 
 function drawAnimatingMarbles() {
 	for (const marble of animatingMarbles) {
-		drawCircle(marble.currentPos, MARBLESIZE, MARBLECOLOR);
+		// Draw multiple marbles together as a group
+		const getOffset = (i) => {
+			if (marble.marbleCount === 1) return vec2(0, 0);
+			if (i < 7) return vec2(0).setAngle(1 + (Math.PI / 3) * i, i === 0 ? 0 : MARBLESIZE * 1.25);
+			return vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
+		};
+		for (let i = 0; i < marble.marbleCount; i++) {
+			drawCircle(marble.currentPos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
+		}
 	}
 	if (captureAnimation) {
 		const currentPos = captureAnimation.fromPos.lerp(captureAnimation.toPos, captureAnimation.progress);
@@ -438,6 +455,8 @@ function gameRender() {
 		}
 		drawMarbles(pos.value, pocket.count, pos.index);
 	}
+}
+function postGameRender() {
 	drawAnimatingMarbles();
 	if (gameInfo.length > 0 && gameInfo[gameInfo.length - 1].goAgain && currentPlayer === PLAYERB && !gameOver) {
 		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
@@ -446,4 +465,3 @@ function gameRender() {
 		"Click a pocket to place marbles counter-clockwise. \nCapture if last marble lands in an empty pocket. \nGo again if last marble lands in your home.";
 	drawTextScreen(rulesText, vec2(320, 320), 18, BLACK, 0.5);
 }
-function postGameRender() {}

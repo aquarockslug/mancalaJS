@@ -24,7 +24,7 @@ local combined_content = [[<!doctype html>
   <script>
 ]] .. game_content .. [[
   </script>
-  <script>engineInit(gameInit, gameUpdate, null, gameRender, null)</script>
+  <script>engineInit(gameInit, gameUpdate, null, gameRender, postGameRender)</script>
 </body>
 ]]
 
