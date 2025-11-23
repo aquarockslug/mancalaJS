@@ -399,7 +399,15 @@ function drawMarbles(pos, count, pocketIndex) {
 			marblesToSkip += marble.marbleCount;
 		}
 	}
-	for (let i = 0; i < count - marblesToSkip; i++) drawCircle(pos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
+	for (let i = 0; i < count - marblesToSkip; i++) {
+		const marblePos = pos.add(getOffset(i));
+		// Draw shadow for 3D effect
+		drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
+		// Draw main marble
+		drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
+		// Add highlight for 3D appearance
+		drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
+	}
 }
 
 function drawAnimatingMarbles() {
@@ -411,7 +419,13 @@ function drawAnimatingMarbles() {
 			return vec2(0).setAngle((Math.PI / 6) * i, MARBLESIZE * 2.5);
 		};
 		for (let i = 0; i < marble.marbleCount; i++) {
-			drawCircle(marble.currentPos.add(getOffset(i)), MARBLESIZE, MARBLECOLOR);
+			const marblePos = marble.currentPos.add(getOffset(i));
+			// Draw shadow for 3D effect
+			drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
+			// Draw main marble
+			drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
+			// Add highlight for 3D appearance
+			drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 		}
 	}
 	if (captureAnimation) {
@@ -422,21 +436,44 @@ function drawAnimatingMarbles() {
 			return vec2(0).setAngle(angle, MARBLESIZE * 2.2);
 		};
 		for (let i = 0; i < captureAnimation.marbleCount; i++) {
-			drawCircle(currentPos.add(getCaptureOffset(i)), MARBLESIZE, MARBLECOLOR);
+			const marblePos = currentPos.add(getCaptureOffset(i));
+			// Draw shadow for 3D effect
+			drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
+			// Draw main marble
+			drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
+			// Add highlight for 3D appearance
+			drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 		}
 	}
 }
 
 function drawBackground() {
-	drawRect(vec2(0), vec2(32), SANDLIGHTBROWN);
-	drawRect(vec2(0, 0.25), vec2(32, 7), SANDRED);
+	// Draw base board with depth
+	drawRect(vec2(0, -0.3), vec2(32), SANDLIGHTBROWN);
+
+	// Draw main board surface with gradient effect
+	drawRect(vec2(0, 0.15), vec2(31.5, 7), SANDRED);
+	drawRect(vec2(0, 0.25), vec2(31, 6.75), new Color(0.82, 0.32, 0.07));
+
+	// Add side rails for 3D effect
+	drawRect(vec2(-15.75, 0.25), vec2(0.5, 6.3), new Color(0.65, 0.2, 0.02));
+	drawRect(vec2(15.75, 0.25), vec2(0.5, 6.3), new Color(0.65, 0.2, 0.02));
+
+	// Draw black border around the board
+	drawRect(vec2(0, 0.25), vec2(32, 6.3), BLACK);
+	drawRect(vec2(0, 0.25), vec2(31.8, 6.1), SANDRED);
+	drawRect(vec2(0, 0.25), vec2(31, 6.3), new Color(0.82, 0.32, 0.07));
+
+	// Draw bottom shadow/edge
+	drawRect(vec2(0, -2.35), vec2(32, 0.15), new Color(0.4, 0.15, 0.02));
 	drawRect(vec2(0, -2.425), vec2(32, 0.05), BLACK);
 }
 
 function drawButton() {
 	const isHovered = BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2;
+	drawCircle(BUTTONPOS.add(vec2(0.05, -0.05)), BUTTONSIZE, new Color(0.3, 0.1, 0.01));
 	drawCircle(BUTTONPOS, BUTTONSIZE, BLACK);
-	drawCircle(BUTTONPOS, isHovered ? BUTTONSIZE - 0.2 : BUTTONSIZE, SANDRED);
+	drawCircle(BUTTONPOS, isHovered ? BUTTONSIZE - 0.1 : BUTTONSIZE, SANDRED);
 	drawTextScreen("\u20D4", worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))), 32, BLACK);
 }
 
