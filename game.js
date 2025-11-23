@@ -9,7 +9,7 @@ const SANDRED = new Color(0.78, 0.28, 0.03),
 const INITMARBLECOUNT = 4,
 	MARBLECOLOR = SANDRED,
 	MARBLESIZE = 0.35;
-const POCKETPOS = vec2(-10.4, -2.25),
+const POCKETPOS = vec2(-10.4, -2.65),
 	POCKETSIZE = vec2(2.6);
 const BOARDWIDTH = 8,
 	BOARDHEIGHT = 2;
@@ -42,7 +42,7 @@ let lastHoveredPocket = -1;
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
-	cameraScale -= 1.5;
+	cameraScale -= 3;
 	initBoard();
 	winSound.play();
 }
@@ -448,25 +448,25 @@ function drawAnimatingMarbles() {
 }
 
 function drawBackground() {
-	// Draw base board with depth
-	drawRect(vec2(0, -0.3), vec2(32), SANDLIGHTBROWN);
+	drawRect(vec2(0, 0), vec2(32), SANDLIGHTBROWN);
 
-	// Draw main board surface with gradient effect
-	drawRect(vec2(0, 0.15), vec2(31.5, 7), SANDRED);
-	drawRect(vec2(0, 0.25), vec2(31, 6.75), new Color(0.82, 0.32, 0.07));
+	// sides
+	drawRect(vec2(-11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
+	drawRect(vec2(-11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
+	drawRect(vec2(11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
+	drawRect(vec2(11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
 
-	// Add side rails for 3D effect
-	drawRect(vec2(-15.75, 0.25), vec2(0.5, 6.3), new Color(0.65, 0.2, 0.02));
-	drawRect(vec2(15.75, 0.25), vec2(0.5, 6.3), new Color(0.65, 0.2, 0.02));
+	// main board
+	drawRect(vec2(0, 0.15), vec2(21.5, 7), SANDRED);
+	drawRect(vec2(0, 0.25), vec2(21.5, 6.75), new Color(0.82, 0.32, 0.07));
 
-	// Draw black border around the board
-	drawRect(vec2(0, 0.25), vec2(32, 6.3), BLACK);
-	drawRect(vec2(0, 0.25), vec2(31.8, 6.1), SANDRED);
-	drawRect(vec2(0, 0.25), vec2(31, 6.3), new Color(0.82, 0.32, 0.07));
+	// top edge
+	drawRect(vec2(0, 3.4), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
+	drawRect(vec2(0, 3.5), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
 
-	// Draw bottom shadow/edge
-	drawRect(vec2(0, -2.35), vec2(32, 0.15), new Color(0.4, 0.15, 0.02));
-	drawRect(vec2(0, -2.425), vec2(32, 0.05), BLACK);
+	// bottom edge
+	drawRect(vec2(0, -2.9), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
+	drawRect(vec2(0, -3), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
 }
 
 function drawButton() {
