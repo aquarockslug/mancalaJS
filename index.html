@@ -35,11 +35,24 @@ let gameOver = false;
 let animatingMarbles = [];
 let animationSpeed = 0.15;
 let captureAnimation = null;
+let highScore = localStorage.getItem("mancalaHighScore") || 0;
+
+// sound effects
+marbleDropSound = new Sound([0.1, , 200, 0.01, 0.01, 0.05, 1, 1.5, , , , , , 0.3, , , , 0.6, 0.05, 0.1, 300]);
+marblePickupSound = new Sound([0.12, , 150, 0.01, 0.01, 0.04, 2, 1, , , , , , 0.4, , , , 0.5, 0.08, 0.08, 400]);
+captureSound = new Sound([0.15, , 100, 0.01, 0.01, 0.08, 3, 1.8, , , , , , 0.6, , , , 0.7, 0.1, 0.15, 500]);
+goAgainSound = new Sound([0.14, , 300, 0.01, 0.01, 0.06, 2, 2, , , , , , 0.7, , , , 0.6, 0.08, 0.12, 600]);
+winSound = new Sound([0.2, , 400, 0.02, 0.02, 0.15, 4, 2.5, , , , , , 0.8, , , , 0.8, 0.15, 0.2, 800]);
+loseSound = new Sound([0.12, , 80, 0.02, 0.02, 0.2, 1, 0.8, , , , , , 0.2, , , , 0.4, 0.2, 0.25, 200]);
+buttonClickSound = new Sound([0.08, , 250, 0.01, 0.01, 0.02, 1, 0.8, , , , , , 0.3, , , , 0.3, 0.04, 0.05, 350]);
+hoverSound = new Sound([0.05, , 600, 0.005, 0.005, 0.01, 0.5, 0.4, , , , , , 0.2, , , , 0.2, 0.02, 0.04, 700]);
+let lastHoveredPocket = -1;
 
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 	cameraScale -= 1.5;
 	initBoard();
+	winSound.play();
 }
 
 const playerHome = (player) => (player === PLAYERA ? 0 : 7);
@@ -68,7 +81,18 @@ function gameUpdate() {
 		gameOver = true;
 		state = getBoardState();
 		let currentPlayer = PLAYERA;
-		alert(state[0].count < state[7].count ? "YOU WIN" : "YOU LOSE");
+		const playerScore = state[7].count;
+		const cpuScore = state[0].count;
+		const won = playerScore > cpuScore;
+		if (won) winSound.play();
+		else loseSound.play();
+		if (won && playerScore > highScore) {
+			highScore = playerScore;
+			localStorage.setItem("mancalaHighScore", highScore);
+			alert(`NEW HIGH SCORE! You win with ${playerScore} marbles!`);
+		} else {
+			alert(won ? `YOU WIN! Score: ${playerScore}` : `YOU LOSE! Score: ${playerScore}`);
+		}
 	}
 	if (gameOver && mouseWasPressed(0) && rewindButton()) {
 		gameOver = false;
@@ -97,8 +121,25 @@ function gameUpdate() {
 			return;
 		}
 	}
+	// check for hover sound
+	let currentHoveredPocket = -1;
+	if (currentPlayer === PLAYERB && !gameOver) {
+		for (const pos of getPocketPos()) {
+			if (isMouseOverValidPocket(pos)) {
+				currentHoveredPocket = pos.index;
+				break;
+			}
+		}
+	}
+	if (currentHoveredPocket !== lastHoveredPocket && currentHoveredPocket !== -1) {
+		hoverSound.play();
+		lastHoveredPocket = currentHoveredPocket;
+	} else if (currentHoveredPocket === -1) {
+		lastHoveredPocket = -1;
+	}
 	if (!mouseWasPressed(0)) return;
 	if (rewindButton()) {
+		buttonClickSound.play();
 		gameMoves = gameMoves.slice(0, -1);
 		gameInfo = gameInfo.slice(0, -1);
 	} else {
@@ -110,6 +151,7 @@ function gameUpdate() {
 function playTurn(pos) {
 	let pocket = getPocketAt(pos);
 	if (pocket.count === 0) return null;
+	marblePickupSound.play();
 	startMarbleAnimation(pocket, currentPlayer, pos.index);
 }
 
@@ -266,9 +308,13 @@ function completeMarbleAnimation() {
 	const moveResult = playMove(pocket, currentPlayer, firstMarble.startingIndex);
 	gameInfo.push(moveResult);
 	animatingMarbles = [];
+	marbleDropSound.play();
 	if (moveResult.captureCount > 0) {
+		captureSound.play();
 		startCaptureAnimation(moveResult, currentPlayer);
-	} else if (!moveResult.goAgain) {
+	} else if (moveResult.goAgain) {
+		goAgainSound.play();
+	} else {
 		currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
 	}
 }
@@ -278,6 +324,7 @@ function updateCaptureAnimation() {
 	captureAnimation.progress += timeDelta / animationSpeed;
 	if (captureAnimation.progress >= 1) {
 		captureAnimation = null;
+		marbleDropSound.play();
 		if (gameInfo.length > 0 && !gameInfo[gameInfo.length - 1].goAgain) {
 			currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
 		}
@@ -399,8 +446,6 @@ function gameRender() {
 		}
 		drawMarbles(pos.value, pocket.count, pos.index);
 	}
-}
-function postGameRender() {
 	drawAnimatingMarbles();
 	if (gameInfo.length > 0 && gameInfo[gameInfo.length - 1].goAgain && currentPlayer === PLAYERB && !gameOver) {
 		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
@@ -409,6 +454,7 @@ function postGameRender() {
 		"Click a pocket to place marbles counter-clockwise. \nCapture if last marble lands in an empty pocket. \nGo again if last marble lands in your home.";
 	drawTextScreen(rulesText, vec2(320, 320), 18, BLACK, 0.5);
 }
+function postGameRender() {}
   </script>
   <script>engineInit(gameInit, gameUpdate, null, gameRender, null)</script>
 </body>

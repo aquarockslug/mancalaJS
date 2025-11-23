@@ -30,15 +30,14 @@ let captureAnimation = null;
 let highScore = localStorage.getItem("mancalaHighScore") || 0;
 
 // sound effects
-marbleDropSound = new Sound([0.3, , 200, 0.01, 0.02, 0.1, 1, 2, , , , , , 0.5, , , , 0.8, 0.1, 0.2, 300]);
-marblePickupSound = new Sound([0.4, , 150, 0.02, 0.01, 0.08, 2, 1.5, , , , , , 0.8, , , , 0.6, 0.15, 0.15, 400]);
-captureSound = new Sound([0.6, , 100, 0.01, 0.03, 0.15, 3, 2.5, , , , , , 1.2, , , , 0.9, 0.2, 0.3, 500]);
-goAgainSound = new Sound([0.5, , 300, 0.02, 0.02, 0.12, 2, 3, , , , , , 1.5, , , , 0.7, 0.12, 0.25, 600]);
-winSound = new Sound([0.8, , 400, 0.05, 0.05, 0.3, 4, 4, , , , , , 2, , , , 1, 0.3, 0.4, 800]);
-loseSound = new Sound([0.4, , 80, 0.08, 0.08, 0.4, 1, 1, , , , , , 0.3, , , , 0.5, 0.4, 0.5, 200]);
-buttonClickSound = new Sound([0.3, , 250, 0.01, 0.01, 0.05, 1, 1.2, , , , , , 0.6, , , , 0.4, 0.08, 0.1, 350]);
-hoverSound = new Sound([0.2, , 600, 0.005, 0.005, 0.02, 0.5, 0.8, , , , , , 0.4, , , , 0.3, 0.05, 0.08, 700]);
-testSound = new Sound([0.5, , 73, 0.01, 0.01, 0.02, 3, 3.4, , , , , , 1.7, , , , 0.64, 0.06, 0.19, 419]);
+marbleDropSound = new Sound([0.1, , 200, 0.01, 0.01, 0.05, 1, 1.5, , , , , , 0.3, , , , 0.6, 0.05, 0.1, 300]);
+marblePickupSound = new Sound([0.12, , 150, 0.01, 0.01, 0.04, 2, 1, , , , , , 0.4, , , , 0.5, 0.08, 0.08, 400]);
+captureSound = new Sound([0.15, , 100, 0.01, 0.01, 0.08, 3, 1.8, , , , , , 0.6, , , , 0.7, 0.1, 0.15, 500]);
+goAgainSound = new Sound([0.14, , 300, 0.01, 0.01, 0.06, 2, 2, , , , , , 0.7, , , , 0.6, 0.08, 0.12, 600]);
+winSound = new Sound([0.2, , 400, 0.02, 0.02, 0.15, 4, 2.5, , , , , , 0.8, , , , 0.8, 0.15, 0.2, 800]);
+loseSound = new Sound([0.12, , 80, 0.02, 0.02, 0.2, 1, 0.8, , , , , , 0.2, , , , 0.4, 0.2, 0.25, 200]);
+buttonClickSound = new Sound([0.08, , 250, 0.01, 0.01, 0.02, 1, 0.8, , , , , , 0.3, , , , 0.3, 0.04, 0.05, 350]);
+hoverSound = new Sound([0.05, , 600, 0.005, 0.005, 0.01, 0.5, 0.4, , , , , , 0.2, , , , 0.2, 0.02, 0.04, 700]);
 let lastHoveredPocket = -1;
 
 function gameInit() {
@@ -142,7 +141,6 @@ function gameUpdate() {
 }
 
 function playTurn(pos) {
-	testSound.play();
 	let pocket = getPocketAt(pos);
 	if (pocket.count === 0) return null;
 	marblePickupSound.play();
@@ -440,8 +438,6 @@ function gameRender() {
 		}
 		drawMarbles(pos.value, pocket.count, pos.index);
 	}
-}
-function postGameRender() {
 	drawAnimatingMarbles();
 	if (gameInfo.length > 0 && gameInfo[gameInfo.length - 1].goAgain && currentPlayer === PLAYERB && !gameOver) {
 		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
@@ -450,3 +446,4 @@ function postGameRender() {
 		"Click a pocket to place marbles counter-clockwise. \nCapture if last marble lands in an empty pocket. \nGo again if last marble lands in your home.";
 	drawTextScreen(rulesText, vec2(320, 320), 18, BLACK, 0.5);
 }
+function postGameRender() {}
