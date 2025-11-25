@@ -487,7 +487,7 @@ function gameRender() {
 
 		let isAnimating = false;
 		// for (let a in animatingMarbles) if (a.startingIndex pocket.index) isAnimating = true;
-		if (pocket.index === 5) isAnimating === true
+		// if (pocket.index === 5) isAnimating === true
 
 		console.log(isAnimating);
 		drawMarbles(pos.value, isAnimating ? 0 : pocket.count, pos.index);
