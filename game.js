@@ -13,12 +13,12 @@ const SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63);
 const SANDORANGE = new Color(0.97, 0.6, 0.22);
 const INITMARBLECOUNT = 4;
 const MARBLECOLOR = SANDRED;
-const MARBLESIZE = 0.35;
-const POCKETPOS = vec2(-10.4, -2.65);
+const MARBLESIZE = 0.3;
+const POCKETPOS = vec2(-10.4, -2.6);
 const POCKETSIZE = vec2(2.6);
 const BOARDWIDTH = 8;
 const BOARDHEIGHT = 2;
-const BUTTONPOS = screenToWorld(vec2(-295, -160));
+const BUTTONPOS = screenToWorld(vec2(-290, -160));
 const BUTTONSIZE = 1.25;
 const CPUDELAY = 1.5;
 const CPUPLAYER = "cpu player";
@@ -42,7 +42,8 @@ const pocketsEmpty = (player) =>
 				(pocket) => pocket && !pocket.home && pocket.index > 7 && pocket.index < 14 && pocket.count > 0,
 			);
 const isMouseOverValidPocket = (pocketPos) =>
-	mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
+	Math.abs(mousePos.x - pocketPos.value.x) < POCKETSIZE.x / 2 &&
+	Math.abs(mousePos.y - pocketPos.value.y) < POCKETSIZE.y / 2.5 &&
 	((pocketPos.index > 7 && currentPlayer === CPUPLAYER) || (pocketPos.index < 7 && currentPlayer === PLAYER)) &&
 	pocketPos.index > 0 &&
 	pocketPos.index !== 7 &&
@@ -248,19 +249,19 @@ function getPocketPos() {
 function drawHomePocket(pos, count) {
 	const center = pos.value.add(vec2(0, 1.625));
 	if (playerHome(currentPlayer) === pos.index) {
-		drawCircle(pos.value, 2.6, BLACK);
-		drawCircle(pos.value.add(vec2(0, 3)), 2.6, BLACK);
+		drawEllipse(pos.value, vec2(2.6, 2.1), BLACK);
+		drawEllipse(pos.value.add(vec2(0, 3)), vec2(2.6, 2.1), BLACK);
 		drawRect(center, vec2(2.6, 3), BLACK);
 	}
-	drawCircle(pos.value, 2.4, SANDORANGE);
-	drawCircle(pos.value.add(vec2(0, 3)), 2.4, SANDORANGE);
+	drawEllipse(pos.value, vec2(2.4, 1.9), SANDORANGE);
+	drawEllipse(pos.value.add(vec2(0, 3)), vec2(2.4, 1.9), SANDORANGE);
 	drawRect(center, vec2(2.4, 3), SANDORANGE);
 	drawTextScreen(String(count), worldToScreen(center), 32, SANDORANGE, 2, BLACK);
 }
 function drawMarble(pos) {
 	drawCircle(pos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
 	drawCircle(pos, MARBLESIZE, MARBLECOLOR);
-	drawCircle(pos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
+	drawCircle(pos.add(vec2(-0.05, -0.05)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 }
 function drawMarbles(pos, count) {
 	const getOffset = (i) =>
@@ -305,8 +306,8 @@ function gameRender() {
 		if (pos.index < 0) continue;
 		if (getPocketAt(pos).index === 0 || getPocketAt(pos).index === 7) drawHomePocket(pos, getPocketAt(pos).count);
 		else {
-			if (isMouseOverValidPocket(pos) && !gameOver) drawCircle(pos.value, 2.5, BLACK);
-			drawCircle(pos.value, 2.3, SANDORANGE);
+			if (isMouseOverValidPocket(pos) && !gameOver) drawEllipse(pos.value, vec2(2.5, 2.0), BLACK);
+			drawEllipse(pos.value, vec2(2.3, 1.8), SANDORANGE);
 		}
 		if (movingMarbles?.startingIndex !== getPocketAt(pos).index) drawMarbles(pos.value, getPocketAt(pos).count);
 	}
