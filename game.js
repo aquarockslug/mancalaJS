@@ -1,47 +1,43 @@
 // mancalaJS by aquarock
+// gameMoves[] stores move history, gameInfo[] stores turn results, movingMarbles/capturedMarbles handle animations
 
-Pocket = (index, count, home) => ({ index, count, home });
-
-const SANDRED = new Color(0.78, 0.28, 0.03),
-	SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63),
-	SANDORANGE = new Color(0.97, 0.6, 0.22);
-const INITMARBLECOUNT = 4,
-	MARBLECOLOR = SANDRED,
-	MARBLESIZE = 0.35;
-const POCKETPOS = vec2(-10.4, -2.65),
-	POCKETSIZE = vec2(2.6);
-const BOARDWIDTH = 8,
-	BOARDHEIGHT = 2;
-const BUTTONPOS = screenToWorld(vec2(-295, -160)),
-	BUTTONSIZE = 1.25;
+const MARBLEDROPSOUND = new Sound([0.1, , 200, 0.01, 0.01, 0.05, 1, 1.5, , , , , , 0.3, , , , 0.6, 0.05, 0.1, 300]);
+const MARBLEPICKUPSOUND = new Sound([0.12, , 150, 0.01, 0.01, 0.04, 2, 1, , , , , , 0.4, , , , 0.5, 0.08, 0.08, 400]);
+const CAPTURESOUND = new Sound([0.15, , 100, 0.01, 0.01, 0.08, 3, 1.8, , , , , , 0.6, , , , 0.7, 0.1, 0.15, 500]);
+const GOAGAINSOUND = new Sound([0.14, , 300, 0.01, 0.01, 0.06, 2, 2, , , , , , 0.7, , , , 0.6, 0.08, 0.12, 600]);
+const WINSOUND = new Sound([0.2, , 400, 0.02, 0.02, 0.15, 4, 2.5, , , , , , 0.8, , , , 0.8, 0.15, 0.2, 800]);
+const LOSESOUND = new Sound([0.12, , 80, 0.02, 0.02, 0.2, 1, 0.8, , , , , , 0.2, , , , 0.4, 0.2, 0.25, 200]);
+const BUTTONCLICKSOUND = new Sound([0.08, , 250, 0.01, 0.01, 0.02, 1, 0.8, , , , , , 0.3, , , , 0.3, 0.04, 0.05, 350]);
+const SANDRED = new Color(0.78, 0.28, 0.03);
+const SANDLIGHTBROWN = new Color(0.97, 0.88, 0.63);
+const SANDORANGE = new Color(0.97, 0.6, 0.22);
+const INITMARBLECOUNT = 4;
+const MARBLECOLOR = SANDRED;
+const MARBLESIZE = 0.35;
+const POCKETPOS = vec2(-10.4, -2.65);
+const POCKETSIZE = vec2(2.6);
+const BOARDWIDTH = 8;
+const BOARDHEIGHT = 2;
+const BUTTONPOS = screenToWorld(vec2(-295, -160));
+const BUTTONSIZE = 1.25;
 const CPUDELAY = 1.5;
-const CPUPLAYER = "cpu player",
-	PLAYER = "player";
-
+const CPUPLAYER = "cpu player";
+const PLAYER = "player";
+const Pocket = (index, count, home) => ({ index, count, home });
 gameMoves = [];
 gameInfo = [];
+movingMarbles = null;
+capturedMarbles = null;
 currentPlayer = PLAYER;
 cpuDelay = new Timer(CPUDELAY);
 gameOver = false;
 animationSpeed = 0.15;
-movingMarbles = null;
-capturedMarbles = null;
-
-const marbleDropSound = new Sound([0.1, , 200, 0.01, 0.01, 0.05, 1, 1.5, , , , , , 0.3, , , , 0.6, 0.05, 0.1, 300]);
-const marblePickupSound = new Sound([0.12, , 150, 0.01, 0.01, 0.04, 2, 1, , , , , , 0.4, , , , 0.5, 0.08, 0.08, 400]);
-const captureSound = new Sound([0.15, , 100, 0.01, 0.01, 0.08, 3, 1.8, , , , , , 0.6, , , , 0.7, 0.1, 0.15, 500]);
-const goAgainSound = new Sound([0.14, , 300, 0.01, 0.01, 0.06, 2, 2, , , , , , 0.7, , , , 0.6, 0.08, 0.12, 600]);
-const winSound = new Sound([0.2, , 400, 0.02, 0.02, 0.15, 4, 2.5, , , , , , 0.8, , , , 0.8, 0.15, 0.2, 800]);
-const loseSound = new Sound([0.12, , 80, 0.02, 0.02, 0.2, 1, 0.8, , , , , , 0.2, , , , 0.4, 0.2, 0.25, 200]);
-const buttonClickSound = new Sound([0.08, , 250, 0.01, 0.01, 0.02, 1, 0.8, , , , , , 0.3, , , , 0.3, 0.04, 0.05, 350]);
-
 function gameInit() {
 	setCanvasFixedSize(vec2(640, 360));
 	cameraScale -= 3;
 	initBoard();
-	winSound.play();
+	WINSOUND.play();
 }
-
 const rewindButton = () => gameMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
 const pocketsEmpty = (player) =>
 	player === PLAYER
@@ -58,27 +54,23 @@ const isMouseOverValidPocket = (pocketPos) =>
 	pocketPos.index > 0 &&
 	pocketPos.index !== 7 &&
 	pocketPos.index !== 16;
-
 function gameUpdate() {
 	if (pocketsEmpty(PLAYER) && pocketsEmpty(CPUPLAYER) && !gameOver) {
 		gameOver = true;
-		const won = getBoardState()[7].count > getBoardState()[0].count;
-		won ? winSound.play() : loseSound.play();
+		let won = getBoardState()[7].count > getBoardState()[0].count;
+		won ? WINSOUND.play() : LOSESOUND.play();
 		alert(won ? `YOU WIN! Score: ${getBoardState()[7].count}` : `YOU LOSE! Score: ${getBoardState()[7].count}`);
 	} else if (gameOver && mouseWasPressed(0) && rewindButton()) initBoard();
-
 	if (updateMovingMarbles() || updateCapturedMarbles()) return;
-
 	if (pocketsEmpty(CPUPLAYER)) currentPlayer = PLAYER;
 	if (pocketsEmpty(PLAYER)) currentPlayer = CPUPLAYER;
-
 	if (cpuDelay.elapsed() && currentPlayer === CPUPLAYER) {
 		playTurn(findTurn(CPUPLAYER));
 		cpuDelay.set(CPUDELAY);
 	}
 	if (mouseWasPressed(0)) {
 		if (rewindButton()) {
-			buttonClickSound.play();
+			BUTTONCLICKSOUND.play();
 			[gameMoves, gameInfo] = [gameMoves.slice(0, -1), gameInfo.slice(0, -1)];
 		}
 		if (currentPlayer === PLAYER) {
@@ -87,14 +79,12 @@ function gameUpdate() {
 		}
 	}
 }
-
 function playTurn(pos) {
 	if (gameOver) return;
 	if (getPocketAt(pos)?.count === 0) return;
-	marblePickupSound.play();
+	MARBLEPICKUPSOUND.play();
 	movingMarbles = getMarbleAnimation(getPocketAt(pos), currentPlayer, pos.index);
 }
-
 function findTurn(player) {
 	if (player !== currentPlayer) return;
 	const state = getBoardState();
@@ -119,31 +109,27 @@ function findTurn(player) {
 	}
 	if (bestMove !== null) return getPocketPos().find((pos) => pos.index === bestMove);
 }
-
-// ==================== board logic ====================
 const getBoardState = () => gameMoves.reduce((acc, curr) => Array.from(moveMarbles(acc, curr)), []);
 const getPocketAt = (location) =>
 	typeof location === "object" ? getBoardState()[location.index] : getBoardState()[location];
 const playerHome = (player) => (player === CPUPLAYER ? 0 : 7);
-const getOppositePocket = (pocket) => getBoardState()[pocket.index < 7 ? -pocket.index + 14 : -(pocket.index - 14)];
 const getOppositeIndex = (index) => (index < 7 ? -index + 14 : -(index - 14));
 const moveMarbles = function* (state, move) {
 	for (let i = 0; i < BOARDHEIGHT * BOARDWIDTH - 2; i++) yield move(i, state[i], state);
 };
-
 function playMove(pocket, player, startingPocketIndex) {
 	let finalPocket = getPocketAt((pocket.count + pocket.index) % 14);
 	let doCapture = finalPocket.count === 0 && !finalPocket.home;
 	const move = (i, p, state) => {
 		const start = state[startingPocketIndex];
 		const crossing = start.index % 15 > (start.index + start.count) % 14;
-		const shouldUpdate =
+		const shouldIncrement =
 			(i >= start.index && i <= start.index + start.count) || (crossing && i <= (start.index + start.count) % 14);
-		return shouldUpdate ? Pocket(i, i === start.index ? 0 : p.count + 1, p.home) : Pocket(i, p.count, p.home);
+		return shouldIncrement ? Pocket(i, i === start.index ? 0 : p.count + 1, p.home) : Pocket(i, p.count, p.home);
 	};
 	gameMoves.push(move);
 	if (!doCapture) return { player, captureCount: 0, goAgain: finalPocket.home };
-	let targetPocket = getOppositePocket(finalPocket);
+	let targetPocket = getBoardState()[getOppositeIndex(finalPocket.index)];
 	gameMoves.pop();
 	const removeMarbles = (p) => (p.index === targetPocket.index ? Pocket(p.index, 0, p.home) : p);
 	const addMarbles = (p) =>
@@ -151,7 +137,6 @@ function playMove(pocket, player, startingPocketIndex) {
 	gameMoves.push((i, p, state) => addMarbles(removeMarbles(move(i, p, state))));
 	return { player, captureCount: targetPocket.count, goAgain: finalPocket.home };
 }
-
 function initBoard() {
 	gameOver = false;
 	currentPlayer = PLAYER;
@@ -164,37 +149,32 @@ function initBoard() {
 		{ player: null, captureCount: 0, goAgain: false },
 	];
 }
-
-// ==================== animations ====================
 function updateMovingMarbles() {
 	if (!movingMarbles) return;
 	let isComplete = false;
 	movingMarbles.progress += timeDelta / animationSpeed;
 	if (movingMarbles.progress >= 1) {
 		movingMarbles.pathIndex++;
-		// reset the progress if not at the target position
 		if (movingMarbles.pathIndex < movingMarbles.path.length - 1) {
 			movingMarbles.targetIndex = movingMarbles.path[movingMarbles.pathIndex];
 			movingMarbles.progress = 0;
 			isComplete = false;
 		} else isComplete = true;
 	}
-	if (movingMarbles.path.length >= 14) isComplete = true; // WARN animation can loop if it is too long
+	if (movingMarbles.path.length >= 14) isComplete = true;
 	isComplete ? completeMarbleAnimation() : updateMarbleAnimation();
 }
-
 function updateCapturedMarbles() {
 	if (!capturedMarbles) return;
 	capturedMarbles.progress += timeDelta / animationSpeed;
 	if (capturedMarbles.progress >= 1) {
 		capturedMarbles = null;
-		marbleDropSound.play();
+		MARBLEDROPSOUND.play();
 		if (gameInfo.length > 0 && !gameInfo[gameInfo.length - 1].goAgain)
 			currentPlayer = currentPlayer === CPUPLAYER ? PLAYER : CPUPLAYER;
 	}
 	return capturedMarbles;
 }
-
 function updateMarbleAnimation() {
 	if (movingMarbles.pathIndex < movingMarbles.path.length) {
 		const targetPos = getPocketPos().find((p) => p.index === movingMarbles.path[movingMarbles.pathIndex]);
@@ -208,20 +188,17 @@ function updateMarbleAnimation() {
 	}
 	return movingMarbles;
 }
-
 function completeMarbleAnimation() {
-	// actually play the move after the animation has completed
 	const moveResult = playMove(getPocketAt(movingMarbles.startingIndex), currentPlayer, movingMarbles.startingIndex);
 	movingMarbles = null;
 	gameInfo.push(moveResult);
-	marbleDropSound.play();
+	MARBLEDROPSOUND.play();
 	if (moveResult.captureCount > 0) {
-		captureSound.play();
+		CAPTURESOUND.play();
 		capturedMarbles = getCaptureAnimation(moveResult, currentPlayer);
-	} else if (moveResult.goAgain) goAgainSound.play();
+	} else if (moveResult.goAgain) GOAGAINSOUND.play();
 	else currentPlayer = currentPlayer === CPUPLAYER ? PLAYER : CPUPLAYER;
 }
-
 function getMarbleAnimation(pocket, player, startingPocketIndex) {
 	const startPos = getPocketPos().find((p) => p.index === startingPocketIndex);
 	const path = [];
@@ -242,23 +219,20 @@ function getMarbleAnimation(pocket, player, startingPocketIndex) {
 		startingIndex: startingPocketIndex,
 	};
 }
-
 function getCaptureAnimation(moveResult, player) {
 	finalPocketIndex = getBoardState().find((pocket) => pocket && !pocket.home && pocket.count === 1)?.index;
 	if (!finalPocketIndex) return;
 	const oppositePos = getPocketPos().find((p) => p.index === getOppositeIndex(finalPocketIndex));
 	const homePos = getPocketPos().find((p) => p.index === playerHome(player));
-	if (oppositePos && homePos) {
+	if (oppositePos && homePos)
 		return {
 			fromPos: oppositePos.value.copy(),
 			toPos: homePos.value.add(vec2(0, 1.625)),
 			progress: 0,
 			marbleCount: moveResult.captureCount,
 		};
-	} else return null;
+	else return null;
 }
-
-// ==================== rendering ====================
 function getPocketPos() {
 	const positions = [];
 	let i = 0;
@@ -273,7 +247,6 @@ function getPocketPos() {
 	}
 	return positions;
 }
-
 function drawHomePocket(pos, count) {
 	const center = pos.value.add(vec2(0, 1.625));
 	if (playerHome(currentPlayer) === pos.index) {
@@ -286,13 +259,11 @@ function drawHomePocket(pos, count) {
 	drawRect(center, vec2(2.4, 3), SANDORANGE);
 	drawTextScreen(String(count), worldToScreen(center), 32, SANDORANGE, 2, BLACK);
 }
-
 function drawMarble(pos) {
 	drawCircle(pos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
 	drawCircle(pos, MARBLESIZE, MARBLECOLOR);
 	drawCircle(pos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 }
-
 function drawMarbles(pos, count) {
 	const getOffset = (i) =>
 		i < 7
@@ -303,7 +274,6 @@ function drawMarbles(pos, count) {
 		drawMarble(marblePos);
 	}
 }
-
 function drawAnimatedMarbles() {
 	if (movingMarbles) drawMarbles(movingMarbles.currentPos, movingMarbles.marbleCount - movingMarbles.pathIndex);
 	if (capturedMarbles)
@@ -312,32 +282,25 @@ function drawAnimatedMarbles() {
 			capturedMarbles.marbleCount,
 		);
 }
-
 function drawBackground() {
 	drawRect(vec2(0, 0), vec2(32), SANDLIGHTBROWN);
-	// sides
 	drawRect(vec2(-11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
 	drawRect(vec2(-11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
 	drawRect(vec2(11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
 	drawRect(vec2(11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
-	// main board
 	drawRect(vec2(0, 0.15), vec2(21.5, 7), SANDRED);
 	drawRect(vec2(0, 0.25), vec2(21.5, 6.75), new Color(0.82, 0.32, 0.07));
-	// top edge
 	drawRect(vec2(0, 3.4), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
 	drawRect(vec2(0, 3.5), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
-	// bottom edge
 	drawRect(vec2(0, -2.9), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
 	drawRect(vec2(0, -3), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
 }
-
 function drawButton() {
 	drawCircle(BUTTONPOS.add(vec2(0.05, -0.05)), BUTTONSIZE, new Color(0.3, 0.1, 0.01));
 	drawCircle(BUTTONPOS, BUTTONSIZE, BLACK);
 	drawCircle(BUTTONPOS, BUTTONPOS.distance(mousePos) < BUTTONSIZE / 2 ? BUTTONSIZE - 0.1 : BUTTONSIZE, SANDRED);
 	drawTextScreen("\u20D4", worldToScreen(BUTTONPOS.add(vec2(0.35, -0.5))), 32, BLACK);
 }
-
 function gameRender() {
 	drawBackground();
 	for (const pos of getPocketPos()) {
