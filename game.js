@@ -43,17 +43,15 @@ function gameInit() {
 }
 
 const rewindButton = () => gameMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
-const pocketsEmpty = (player) => {
-	if (player === PLAYER) {
-		return !getBoardState().find(
-			(pocket) => pocket && !pocket.home && pocket.index > 0 && pocket.index < 7 && pocket.count > 0,
-		);
-	} else if (player === CPUPLAYER) {
-		return !getBoardState().find(
-			(pocket) => pocket && !pocket.home && pocket.index > 7 && pocket.index < 14 && pocket.count > 0,
-		);
-	} else return false;
-};
+const pocketsEmpty = (player) =>
+	player === PLAYER
+		? !getBoardState().find(
+				(pocket) => pocket && !pocket.home && pocket.index > 0 && pocket.index < 7 && pocket.count > 0,
+			)
+		: !getBoardState().find(
+				(pocket) => pocket && !pocket.home && pocket.index > 7 && pocket.index < 14 && pocket.count > 0,
+			);
+
 const isMouseOverValidPocket = (pocketPos) =>
 	mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
 	((pocketPos.index > 7 && currentPlayer === CPUPLAYER) || (pocketPos.index < 7 && currentPlayer === PLAYER)) &&
@@ -119,11 +117,7 @@ function findTurn(player) {
 			}
 		}
 	}
-	if (bestMove !== null) {
-		const positions = getPocketPos();
-		const targetPos = positions.find((pos) => pos.index === bestMove);
-		if (targetPos) return targetPos;
-	}
+	if (bestMove !== null) return getPocketPos().find((pos) => pos.index === bestMove);
 }
 
 // ==================== board logic ====================
