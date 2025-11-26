@@ -24,10 +24,10 @@ let gameInfo = [];
 let currentPlayer = PLAYERB;
 let cpuDelay = new Timer(1.5);
 let gameOver = false;
+
 let animatingMarbles = [];
 let animationSpeed = 0.15;
 let captureAnimation = null;
-let highScore = localStorage.getItem("mancalaHighScore") || 0;
 
 // sound effects
 marbleDropSound = new Sound([0.1, , 200, 0.01, 0.01, 0.05, 1, 1.5, , , , , , 0.3, , , , 0.6, 0.05, 0.1, 300]);
@@ -50,8 +50,7 @@ function gameInit() {
 const playerHome = (player) => (player === PLAYERA ? 0 : 7);
 
 function pocketsEmpty() {
-	const state = getBoardState();
-	for (const pocket of state) {
+	for (const pocket of getBoardState()) {
 		if (pocket && !pocket.home && pocket.count > 0) {
 			return false;
 		}
@@ -71,32 +70,32 @@ const rewindButton = () => gameMoves.length > 2 && mousePos.distance(BUTTONPOS) 
 function gameUpdate() {
 	if (pocketsEmpty() && !gameOver) {
 		gameOver = true;
-		state = getBoardState();
+		const state = getBoardState();
 		let currentPlayer = PLAYERA;
 		const playerScore = state[7].count;
 		const cpuScore = state[0].count;
 		const won = playerScore > cpuScore;
 		if (won) winSound.play();
 		else loseSound.play();
-		if (won && playerScore > highScore) {
-			highScore = playerScore;
-			localStorage.setItem("mancalaHighScore", highScore);
-			alert(`NEW HIGH SCORE! You win with ${playerScore} marbles!`);
-		} else {
-			alert(won ? `YOU WIN! Score: ${playerScore}` : `YOU LOSE! Score: ${playerScore}`);
+		alert(won ? `YOU WIN! Score: ${playerScore}` : `YOU LOSE! Score: ${playerScore}`);
+	}
+	if (gameOver) {
+		if (mouseWasPressed(0) && rewindButton()) {
+			gameOver = false;
+			initBoard();
 		}
+		return;
 	}
-	if (gameOver && mouseWasPressed(0) && rewindButton()) {
-		gameOver = false;
-		initBoard();
-	}
-	if (gameOver) return;
+
+	// animation
 	updateMoveAnimations();
 	updateCaptureAnimation();
 	if (animatingMarbles.length > 0 || captureAnimation) return;
+
+	// play move
 	if (cpuDelay.elapsed() && currentPlayer === PLAYERA && !MULTIPLAYER) {
 		let movesAvaliable = false;
-		state = getBoardState();
+		const state = getBoardState();
 		for (let i = 8; i < 14; i++) if (state[i].count > 0) movesAvaliable = true;
 		if (!movesAvaliable) {
 			currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
@@ -106,21 +105,20 @@ function gameUpdate() {
 		cpuDelay.set(1.5);
 	} else {
 		let movesAvaliable = false;
-		state = getBoardState();
+		const state = getBoardState();
 		for (let i = 1; i < 7; i++) if (state[i].count > 0) movesAvaliable = true;
 		if (!movesAvaliable) {
 			currentPlayer = currentPlayer === PLAYERA ? PLAYERB : PLAYERA;
 			return;
 		}
 	}
+
 	// check for hover sound
 	let currentHoveredPocket = -1;
-	if (currentPlayer === PLAYERB && !gameOver) {
-		for (const pos of getPocketPos()) {
-			if (isMouseOverValidPocket(pos)) {
-				currentHoveredPocket = pos.index;
-				break;
-			}
+	for (const pos of getPocketPos()) {
+		if (isMouseOverValidPocket(pos)) {
+			currentHoveredPocket = pos.index;
+			break;
 		}
 	}
 	if (currentHoveredPocket !== lastHoveredPocket && currentHoveredPocket !== -1) {
@@ -220,19 +218,20 @@ function initBoard() {
 		(i, m) => (m?.index === 0 || m?.index === 7 ? Pocket(i, 0, true) : Pocket(i, INITMARBLECOUNT, false)),
 	];
 	currentPlayer = PLAYERB;
-	gameInfo[({ captureCount: 0, goAgain: false }, { captureCount: 0, goAgain: false })];
+	gameInfo = [
+		{ captureCount: 0, goAgain: false },
+		{ captureCount: 0, goAgain: false },
+	];
 }
 
 // ==================== animations ====================
 
 // add marbles to the animatingMarbles list
 function startMarbleAnimation(pocket, player, startingPocketIndex) {
-	const positions = getPocketPos();
-	const startPos = positions.find((p) => p.index === startingPocketIndex);
-	const marbleCount = pocket.count;
+	const startPos = getPocketPos().find((p) => p.index === startingPocketIndex);
 	const path = [];
 	let currentIndex = startingPocketIndex;
-	for (let i = 0; i < marbleCount; i++) {
+	for (let i = 0; i < pocket.count; i++) {
 		currentIndex = (currentIndex + 1) % 14;
 		if ((player === PLAYERA && currentIndex === 7) || (player === PLAYERB && currentIndex === 0)) {
 			currentIndex = (currentIndex + 1) % 14;
@@ -243,24 +242,15 @@ function startMarbleAnimation(pocket, player, startingPocketIndex) {
 	animatingMarbles.push({
 		currentPos: startPos.value.copy(),
 		targetIndex: path[0],
-		path: path,
+		path,
 		pathIndex: 0,
 		progress: 0,
-		marbleCount: marbleCount,
+		marbleCount: pocket.count,
 		startingIndex: startingPocketIndex,
 	});
 }
 
 function updateSingleMarble(marble, positions) {
-	// If this is the marble's final destination, stop it at the pocket center
-	if (marble.pathIndex === marble.path.length - 1) {
-		const finalPos = positions.find((p) => p.index === marble.path[marble.pathIndex]);
-		if (finalPos) {
-			marble.currentPos = finalPos.value;
-		}
-		return true;
-	}
-
 	marble.progress += timeDelta / animationSpeed;
 	if (marble.progress >= 1) {
 		marble.pathIndex++;
@@ -295,14 +285,13 @@ function updateMoveAnimations() {
 	let allComplete = true;
 	for (const marble of animatingMarbles) {
 		const isComplete = updateSingleMarble(marble, positions);
-		if (!isComplete) {
-			allComplete = false;
-		}
+		if (!isComplete) allComplete = false;
 		updateMarblePosition(marble, positions);
 	}
 	if (allComplete) completeMarbleAnimation();
 }
 
+// actually play the move after the animation has completed
 function completeMarbleAnimation() {
 	const firstMarble = animatingMarbles[0];
 	const pocket = getPocketAt(firstMarble.startingIndex);
@@ -431,11 +420,8 @@ function drawAnimatingMarbles() {
 		};
 		for (let i = 0; i < captureAnimation.marbleCount; i++) {
 			const marblePos = currentPos.add(getCaptureOffset(i));
-			// Draw shadow for 3D effect
 			drawCircle(marblePos.add(vec2(0.02, 0.02)), MARBLESIZE, new Color(0.4, 0.15, 0.02));
-			// Draw main marble
 			drawCircle(marblePos, MARBLESIZE, MARBLECOLOR);
-			// Add highlight for 3D appearance
 			drawCircle(marblePos.add(vec2(-0.08, -0.08)), MARBLESIZE * 0.3, new Color(0.95, 0.7, 0.4));
 		}
 	}
@@ -443,21 +429,17 @@ function drawAnimatingMarbles() {
 
 function drawBackground() {
 	drawRect(vec2(0, 0), vec2(32), SANDLIGHTBROWN);
-
 	// sides
 	drawRect(vec2(-11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
 	drawRect(vec2(-11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
 	drawRect(vec2(11, 0.15), vec2(1.2, 7), new Color(0.55, 0.18, 0.02));
 	drawRect(vec2(11.1, 0.15), vec2(0.3, 7), new Color(0.4, 0.12, 0.01));
-
 	// main board
 	drawRect(vec2(0, 0.15), vec2(21.5, 7), SANDRED);
 	drawRect(vec2(0, 0.25), vec2(21.5, 6.75), new Color(0.82, 0.32, 0.07));
-
 	// top edge
 	drawRect(vec2(0, 3.4), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
 	drawRect(vec2(0, 3.5), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
-
 	// bottom edge
 	drawRect(vec2(0, -2.9), vec2(21.5, 0.4), new Color(0.65, 0.22, 0.04));
 	drawRect(vec2(0, -3), vec2(21.5, 0.2), new Color(0.72, 0.28, 0.06));
@@ -485,12 +467,7 @@ function gameRender() {
 			drawCircle(pos.value, 2.3, SANDORANGE);
 		}
 
-		let isAnimating = false;
-		// for (let a in animatingMarbles) if (a.startingIndex pocket.index) isAnimating = true;
-		// if (pocket.index === 5) isAnimating === true
-
-		console.log(isAnimating);
-		drawMarbles(pos.value, isAnimating ? 0 : pocket.count, pos.index);
+		drawMarbles(pos.value, pocket.count, pos.index);
 	}
 }
 function postGameRender() {
