@@ -23,7 +23,6 @@ const BUTTONSIZE = 1.25;
 const CPUDELAY = 1.5;
 const CPUPLAYER = "cpu player";
 const PLAYER = "player";
-const Pocket = (index, count, home) => ({ index, count, home });
 gameMoves = [];
 gameInfo = [];
 movingMarbles = null;
@@ -32,12 +31,7 @@ currentPlayer = PLAYER;
 cpuDelay = new Timer(CPUDELAY);
 gameOver = false;
 animationSpeed = 0.15;
-function gameInit() {
-	setCanvasFixedSize(vec2(640, 360));
-	cameraScale -= 3;
-	initBoard();
-	WINSOUND.play();
-}
+const Pocket = (index, count, home) => ({ index, count, home });
 const rewindButton = () => gameMoves.length > 2 && mousePos.distance(BUTTONPOS) < POCKETSIZE.x / 2;
 const pocketsEmpty = (player) =>
 	player === PLAYER
@@ -47,13 +41,17 @@ const pocketsEmpty = (player) =>
 		: !getBoardState().find(
 				(pocket) => pocket && !pocket.home && pocket.index > 7 && pocket.index < 14 && pocket.count > 0,
 			);
-
 const isMouseOverValidPocket = (pocketPos) =>
 	mousePos.distance(pocketPos.value) < POCKETSIZE.x / 2 &&
 	((pocketPos.index > 7 && currentPlayer === CPUPLAYER) || (pocketPos.index < 7 && currentPlayer === PLAYER)) &&
 	pocketPos.index > 0 &&
 	pocketPos.index !== 7 &&
 	pocketPos.index !== 16;
+function gameInit() {
+	setCanvasFixedSize(vec2(640, 360));
+	cameraScale -= 3;
+	initBoard();
+}
 function gameUpdate() {
 	if (pocketsEmpty(PLAYER) && pocketsEmpty(CPUPLAYER) && !gameOver) {
 		gameOver = true;
@@ -314,8 +312,7 @@ function gameRender() {
 	}
 }
 function postGameRender() {
-	drawAnimatedMarbles();
-	drawButton();
+	drawAnimatedMarbles(), drawButton();
 	if (gameInfo.length > 0 && gameInfo[gameInfo.length - 1].goAgain && currentPlayer === PLAYER && !gameOver)
 		drawTextScreen("GO AGAIN!", vec2(320, 35), 36, SANDRED, 2, BLACK);
 	const rulesText =
