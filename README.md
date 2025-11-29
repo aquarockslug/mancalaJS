@@ -16,7 +16,7 @@ The game is built with functional programming principles and minimalism:
 - **Immutable game state**: Each move creates a new state
 - **No Classes**: Simple objects and factory functions only
 - **Undo System**: Trivial to implement when using a functional state
-- **Zero Dependencies**: No build tools or frameworks required (except LittleJS)
+- **Zero Dependencies**: No build tools or frameworks required (except LittleJ)
 - **Pure Functions**: Game logic is composed of pure, testable functions
 
 This game demonstrates how complex game logic emerges from simple functional ideas.
